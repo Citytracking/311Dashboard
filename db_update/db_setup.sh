@@ -1,0 +1,1 @@
+psql -U sf_311 -f create.sql
