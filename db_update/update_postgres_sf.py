@@ -124,6 +124,7 @@ def update_database(reqs):
 
             if res: # Make this test more explicit
                 print 'Updating'
+                # don't update expected datetime if it is now null
                 cur.execute("""UPDATE sf_requests SET service_request_id=%(service_request_id)s, service_name=%(service_name)s, service_code=%(service_code)s,
                              description=%(description)s, status=%(status)s, lat=%(lat)s, lon=%(lon)s, requested_datetime=%(requested_datetime)s,
                              expected_datetime=%(expected_datetime)s, updated_datetime=%(updated_datetime)s, address=%(address)s, zipcode=%(zipcode)s
