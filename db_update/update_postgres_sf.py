@@ -7,6 +7,8 @@ import xml.parsers.expat
 import psycopg2
 import json
 
+days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
 ONE_DAY = datetime.timedelta(1)
 
 def load_config(filename):
@@ -17,7 +19,8 @@ def load_config(filename):
 
 def append_log(file_name, message):
     with open(file_name, 'a') as log_file:
-        log_file.write(message)
+        log_file.write('\n') 
+	log_file.write(message)
     
 def compute_time_range(end_date=None, num_of_days=1):
     """Computing the the start and end date for our Open311 query"""
@@ -27,7 +30,8 @@ def compute_time_range(end_date=None, num_of_days=1):
     if end_date is None:
         end_date = datetime.datetime.utcnow() - datetime.timedelta(days=1)
 
-    end = end_date.replace(hour=0, minute=0, second=0, microsecond=0) + ONE_DAY # Making sure we get everything
+    #end = end_date.replace(hour=0, minute=0, second=0, microsecond=0) + ONE_DAY # Making sure we get everything
+    end = end_date.replace(hour=0, minute=0, second=0, microsecond=0)
 
     start = end - days_delta
 
@@ -48,6 +52,7 @@ def get_requests(start, end):
     encoded_args = urllib.urlencode(query_args)
 
     data_url = base_url + '?' + encoded_args
+    print data_url
 
     try:
         response = urllib.urlopen(data_url)
@@ -74,7 +79,8 @@ def parse_and_store_data(response, start_date):
     try:
         dom = minidom.parse(response)
     except xml.parsers.expat.ExpatError:
-        append_log('err_log.txt', 'ExpatError');
+	print 'Expat error'
+        append_log('err_log.txt', 'ExpatError. Start date: ' + days[start.weekday()] + ', ' + start.strftime('%Y-%m-%d'))
         return
 
     for node in dom.getElementsByTagName('request'):
@@ -98,7 +104,7 @@ def parse_and_store_data(response, start_date):
 
         reqs.append(req_obj)
 
-    append_log('log.txt', str(len(reqs)) + ' requests, start date: ' + start_date + ', ' + str(datetime.datetime.utcnow()) + '\n')
+    append_log('log.txt', str(len(reqs)) + ' requests, start date: ' + start.isoformat() + ', ' + str(datetime.datetime.utcnow()) + '\n')
     update_database(reqs)
 
 def update_database(reqs):
@@ -111,7 +117,13 @@ def update_database(reqs):
     u'requested_datetime': u'2012-05-26 23:36:16.303', u'address': u'510  BLANKEN AVE SAN FRANCISCO , CA ', 
     u'lat': u'37.710915', 'expected_datetime': None}
     """
-        
+
+    # to update
+    # https://open311.sfgov.org/dev/Open311/v2/requests.xml?service_request_id=1132477,1132476&jurisdiction_id=sfgov.org
+    # this gives all the requests on a particular date:
+    # https://open311.sfgov.org/Open311/v2/requests.xml?end_date=2012-05-27T00%3A00%3A00Z&start_date=2012-05-26T00%3A00%3A00Z&jurisdiction_id=sfgov.org
+    # longest request to be fulfilled?
+    
     conn = psycopg2.connect(host=config['DATABASE']['host'], password=config['DATABASE']['password'], dbname=config['DATABASE']['db_name'], user=config['DATABASE']['user'])
     cur = conn.cursor()
 
@@ -123,13 +135,13 @@ def update_database(reqs):
             res = cur.fetchone()
 
             if res: # Make this test more explicit
-                print 'Updating'
                 # don't update expected datetime if it is now null
                 cur.execute("""UPDATE sf_requests SET service_request_id=%(service_request_id)s, service_name=%(service_name)s, service_code=%(service_code)s,
                              description=%(description)s, status=%(status)s, lat=%(lat)s, lon=%(lon)s, requested_datetime=%(requested_datetime)s,
                              expected_datetime=%(expected_datetime)s, updated_datetime=%(updated_datetime)s, address=%(address)s, zipcode=%(zipcode)s
                              WHERE service_request_id=%(service_request_id)s""", req)
             else:
+                #print 'inserting'
                 cur.execute(
                     """INSERT INTO sf_requests (service_request_id, service_name, service_code, description, status, lat, lon, requested_datetime,
                         expected_datetime, updated_datetime, address, zipcode) VALUES (%(service_request_id)s, %(service_name)s, %(service_code)s,
@@ -170,12 +182,13 @@ if __name__ == '__main__':
         start, end = compute_time_range(end_date, 1) # Just handling one day at a time
 
         for day in xrange(num_of_days):
-            response = get_requests(start, end)
+            print start.isoformat() + ' ' + end.isoformat()
+	    response = get_requests(start, end)
             
             if response:
-                parse_and_store_data(response, start.isoformat()) # Handle Expat error, just get data for a day
+                parse_and_store_data(response, start) # Handle Expat error, just get data for a day
             else:
-                append_log('err_log.txt', 'Could not get a response for the following range (start - end): ' + start + ' - ' + end)
+                append_log('err_log.txt', 'Could not get a response for the following range (start - end): ' + start.isoformat() + ' - ' + end.isoformat())
                 
                 continue
 
