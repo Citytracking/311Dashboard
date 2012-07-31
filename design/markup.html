@@ -1,0 +1,105 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<title>Open 311</title>
+<style>
+body { font-family: 'Helvetica Neue', Helvetica, Arial, sansserif; font-size: 100%; padding: 20px; color: #333; }
+.dashboardCase { width: 960px; margin-right: auto; margin-left: auto;}
+.cityName {font-weight: normal;	color: #999;}
+
+h1 { margin-top: 0; font-size: 24px;  }
+h2 { font-size: 16px; color: #000; margin-bottom: 0; }
+
+.searchBox {float: right;}
+
+.report {margin-bottom: 20px; }
+.report select { font-size: 14px; }
+.report h3 { font-size: 14px; color: #999; font-weight: normal; margin-bottom: 0;  }
+.report div {width: 240px;float: left; font-size: 1.5em; color: #000; }
+
+.chart { clear: both; margin-top: 100px; margin-bottom: 30px; }
+.chart ul {float: right; }
+.chart li { list-style: none; margin-bottom: 20px;  color: #999; font-size: 14px; }
+.chart .requestCount { font-weight: bold; color: #333; font-size: 1.5em; } 
+.chartArea { width: 900px; height: 140px; /* TEMP --> */ background-color: #FF9;}
+
+.map { width: 960px; height: 620px; background-image: url(map-placeholder.gif); 
+}
+.typeList { float: right; background-color: #FFF; margin: 20px; padding: 10px; }
+.typeList li { line-height: 1.5em; }
+}
+</style>
+<!-- <link href="http://maps.stamen.com/css/bootstrap/bootstrap.css" rel="stylesheet" type="text/css" /> -->
+</head>
+
+<body>
+<div class="dashboardCase">
+    <div class="searchBox">
+        <form>
+            <input type="text" value="place or ticket" />
+            <button>Find</button>
+        </form>
+    </div>
+    <h1> <span class="cityName">San Francisco</span> 311 Dashboard </h1>
+    <h2>July 17, 2012</h2>
+    <div class="report">
+        <div>
+            <h3>Neighborhood</h3>
+            <form>
+                <select name="neighborhoods" id="neighborhoods">
+                    <option>All...</option>
+                    <option>Mission</option>
+                    <option>Noe Valley</option>
+                    <option>Tenderloin</option>
+                </select>
+            </form>
+        </div>
+        <div>
+            <h3>Most Requests Today</h3>
+            Sidewalk Cleaning 
+        </div>
+        <div>
+            <h3>Least Requests Today</h3>
+            Graffiti 
+        </div>
+        <div>
+            <h3>Average Response Time</h3>
+            6 days 
+        </div>
+    </div>
+    <div class="chart">
+        <ul>
+            <li>
+            	<span class="requestCount">20</span><br />
+				Closed</li>
+            <li>
+            	<span class="requestCount">59</span><br />
+				Open</li>
+        </ul>    
+        <div class="chartArea"></div>
+    </div>
+    <div class="map">
+        <div class="typeList">
+        	<ol>
+            	<li><a href="#">Sidewalk Cleaning</a></li>            	
+            	<li><a href="#">Illegal Dumping</a></li>            	
+            	<li><a href="#">Litter Receptacles</a></li>            	
+            	<li><a href="#">Overflowing Dumpsters</a></li>            	
+            	<li><a href="#">Sewer Issues</a></li>            	
+            	<li><a href="#">Sidewalk Defect</a></li>            	
+            	<li><a href="#">Sidewalk or Curb</a></li>            	
+            	<li><a href="#">Street Cleaning</a></li>            	
+            	<li><a href="#">Street Defects</a></li>            	
+            	<li><a href="#">Street & Sidewalk Cleaning</a></li>            	
+            	<li><a href="#">Street or Sidewalk</a></li>            	
+            	<li><a href="#">Tree Maintenance</a></li>            	
+            	<li><a href="#">Graffiti</a></li>            	
+            </ol>
+        
+        </div>
+    </div>
+</div>
+</body>
+</html>
