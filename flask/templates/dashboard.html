@@ -25,16 +25,24 @@ h2 { font-size: 16px; color: #000; margin-bottom: 0; }
 .chart .requestCount { font-weight: bold; color: #333; font-size: 1.5em; } 
 .chartArea { width: 900px; height: 140px; /* TEMP --> */ background-color: #FF9;}
 
-.map { width: 960px; height: 620px; background-image: url("{{ url_for('static', filename='images/map-placeholder.gif') }}"); 
+#map {
+    width: 960px; 
+    height: 620px; 
 }
+
 .typeList { float: right; background-color: #FFF; margin: 20px; padding: 10px; }
 .typeList li { line-height: 1.5em; }
 }
 </style>
+<link rel="stylesheet" href="http://leaflet.cloudmade.com/dist/leaflet.css" />
+<!--[if lte IE 8]><link rel="stylesheet" href="http://leaflet.cloudmade.com/dist/leaflet.ie.css" /><![endif]-->
+
 <!-- <link href="http://maps.stamen.com/css/bootstrap/bootstrap.css" rel="stylesheet" type="text/css" /> -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
 <script src="http://d3js.org/d3.v2.min.js"></script>
 <script type=text/javascript src="{{url_for('static', filename='js/neighborhood_list.js') }}"></script>
+<!--<script type=text/javascript src="{{url_for('static', filename='js/leaflet.js') }}"></script>-->
+<script src="http://leaflet.cloudmade.com/dist/leaflet.js"></script>
 <script type="text/javascript">
     $(function() {
         // Set up neighborhoods dropdown
@@ -43,8 +51,45 @@ h2 { font-size: 16px; color: #000; margin-bottom: 0; }
                 .append($("<option></option")
                 .attr("value", neighborhoods[i])
                 .text(neighborhoods[i]));
-        } 
+        }
         
+        // Deal with the map
+        
+        var map = new L.Map('map');
+        
+        toner = new L.TileLayer('http://tile.stamen.com/toner/{z}/{x}/{y}.png', {maxZoom: 18});
+        
+        map.setView(new L.LatLng(37.77, -122.41), 12).addLayer(toner);
+        
+        var defaultStyle = {
+            color: "#333",
+            weight: 3,
+            opacity: .6,
+            fillOpacity: 0,
+            fillColor: "#000"
+        };
+        
+        var markerStyle = {
+            radius: 3,
+            color: "#FF0000",
+            fillColor: "#FF0000",
+            weight: 1,
+            opacity: 1,
+            fillOpacity: .5
+        };
+        
+        // Data for the map
+        /*
+        var results = {{ results|safe }};
+        
+        for (var i=0, max = results.length; i < max; i++) {
+            //console.log(results[i]);
+            var marker = new L.CircleMarker(new L.LatLng(results[i].lat, results[i].lon), markerStyle);
+            map.addLayer(marker);
+        
+            //$('#requests').append('<tr><td>' + results[i].service_name + '</td><td>' + results[i].status + '</td><td>' + results[i].date + '</td><td>' + results[i].expected_datetime + '</td><td>' + results[i].updated_datetime + '</td><td>' + results[i].lat + ', ' + results[i].lon + '</td></tr>')
+        }
+        */
     });
 </script>
 </head>
@@ -92,7 +137,8 @@ h2 { font-size: 16px; color: #000; margin-bottom: 0; }
         </ul>    
         <div class="chartArea"></div>
     </div>
-    <div class="map">
+    <div id="map">
+        <!--
         <div class="typeList">
         	<ol>
             	<li><a href="#">Sidewalk Cleaning</a></li>            	
@@ -109,8 +155,8 @@ h2 { font-size: 16px; color: #000; margin-bottom: 0; }
             	<li><a href="#">Tree Maintenance</a></li>            	
             	<li><a href="#">Graffiti</a></li>            	
             </ol>
-        
         </div>
+        -->
     </div>
 </div>
 </body>

@@ -297,12 +297,30 @@ def types_list():
 @app.route("/daily/")
 def daily_list():
     return render_template('daily.html')
+    
+# Handle dates
+@app.route("/requests/daily/<start_day>..<end_day>", methods=['POST', 'GET'])
+def get_requests_by_date(start_day=None, end_day=None):
+    print 'get requests'
+    if start_day and end_day:
+        print start_day, end_day
+        
+        start_date = parse_date(start_day)
+        end_date = (end_day and parse_date(end_day)) or start_date + ONE_DAY
+        
+        res = query_db("""SELECT status, service_name, service_request_id, CAST(DATE(requested_datetime) AS text), CAST(DATE(updated_datetime) AS text) as updated_datetime, CAST(DATE(expected_datetime) AS text) as expected_datetime, address, lat, lon FROM sf_requests WHERE requested_datetime BETWEEN (%s) AND (%s) ORDER BY requested_datetime ASC Limit 1000""", (start_date, end_date))
+
+        return json.dumps(res)
+    else:
+        return 'none'
 
 # Handle dates
+"""
 @app.route("/requests/daily/<start_day>..<end_day>/requests.<type>", methods=['POST', 'GET'])
 @app.route("/daily/<start_day>..<end_day>", methods=['POST', 'GET'])
 @app.route("/requests/daily/<start_day>/requests.<type>", methods=['POST', 'GET'])
 @app.route("/daily/<start_day>", methods=['POST', 'GET'])
+"""
 def request_display_by_date(type=None, start_day=None, end_day=None):
     limit = request.args.get('limit', 1, type=str) # don't repeat?
     # just try count and group by and see how slow it is
@@ -354,4 +372,4 @@ def page_not_found(e):
 
 if __name__ == "__main__":
     #app.run()
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=80)
