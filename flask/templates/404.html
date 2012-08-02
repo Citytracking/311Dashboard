@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Index{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .important { color: #336699; }
+    </style>
+{% endblock %}
+{% block content %}
+    <h1>404</h1>
+    <p class="important">
+      Page not found.
+      <img src="{{ url_for('static', filename='images/bill.jpg') }}" width="1936" height="2592
+                alt="Sorry!" />
+    </p>
+{% endblock %}
