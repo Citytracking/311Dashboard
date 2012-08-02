@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+  <head>
+    <title>
+      311 Dashboard
+    </title>
+    <link rel=stylesheet href="{{ url_for('static', filename='bootstrap_sort.css') }}">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="http://d3js.org/d3.v2.min.js"></script>
+  <style>
+    .chart {
+      margin: 0px 0px 0px 10px;
+      cursor: pointer;
+    }
+
+    /*
+    .chart rect {
+      fill: #333;
+    }
+    */
+
+    .open {
+      fill: #39644e;
+    }
+
+    .closed {
+      fill: #6e99b0;
+    }
+
+    .active {
+      fill: #333;
+    }
+
+  </style>
+  <script type=text/javascript>
+    $(function() {
+      var daily_count = {{ daily_count|safe }};
+      console.log(daily_count);
+
+      /*
+      var daily_open = [];
+      var daily_closed = [];
+      for (var i = 0; i < daily_count.length; i++) {
+        daily_open.push(daily_count[i]['Open']);
+        daily_closed.push(daily_count[i]['Closed']);
+      }
+
+      //console.log(daily_open);
+      //console.log(daily_count);
+      */
+
+      var w = 500;
+      var h = 250;
+      var barPadding = 1;
+
+      var chart = d3.select("body")
+                  .append("svg")
+                  .attr("class", "chart")
+                  .attr("width", w)
+                  .attr("height", h);
+
+      chart.selectAll(".open")
+          .data(daily_count)
+          .enter()
+          .append("a") // Add a link
+          .attr("xlink:href", function(d) { return 'http://ec2-50-17-41-140.compute-1.amazonaws.com:5000/daily/' + d.date})
+          .append("rect")
+          .attr("class", "open")
+          .attr("x", function(d, i) {
+              //console.log('i', i);
+              return i * (w / daily_count.length);
+          })
+          .attr("y", .5*h)
+          .attr("height", 0)
+          /*
+          .attr("y", function(d) {
+                        //console.log('d', d); // d is the object
+                        return h - .25*d.Open - .5 * h; // 50 is the 
+          })
+*/
+          .attr("width", w/daily_count.length - barPadding)
+          /*
+          .attr("height", function(d) {
+                            return .25*d.Open;
+          })
+*/
+          .attr("fill-opacity", .0001) // try setting this to zero for strange behavior
+          .transition()
+            .duration(400)
+            //.delay(function(d, i) { return i / daily_count.length * 400; })
+            .delay(function(d, i) { return i * daily_count.length; })
+            .attr("fill-opacity", 1)
+            .attr("y", function(d) { return h - .25*d.Open - .5 * h;})
+            .attr("height", function(d) { return .25*d.Open; });
+
+      chart.selectAll(".open")
+        .on("mouseover", function(d){
+            d3.select(this).classed("active", true);
+            $("#count").html(d.Open + ' requests opened on ' + d.date);
+          })
+          .on("mouseout", function(){
+              d3.select(this).classed("active", false);
+              //$("#count").html("Count");
+
+          })
+
+      chart.selectAll(".closed")
+          .data(daily_count)
+          .enter()
+          .append("a") // Add a link
+          .attr("xlink:href", function(d) { return 'http://ec2-50-17-41-140.compute-1.amazonaws.com:5000/daily/' + d.date})
+          .append("rect")
+          .attr("class", "closed")
+          .attr("x", function(d, i) {
+                      //console.log('i', i);
+                      return i * (w / daily_count.length);
+          })
+          .attr("y", .5*h)
+          .attr("height", 0)
+          /*
+          .attr("y", function(d) {
+                        //console.log('d', d); // d is the object
+                        return .5*h + barPadding;
+          })
+*/
+          .attr("width", w/daily_count.length - barPadding)
+          /*
+          .attr("height", function(d) {
+                        return .25*d.Closed;
+          })
+*/
+          .attr("fill-opacity", 0.0001) // try setting this to zero for strange behavior
+          .transition()
+            .duration(400)
+            //.delay(function(d, i) { return i / daily_count.length * 400; })
+            .delay(function(d, i) { return i * daily_count.length; })
+            .attr("fill-opacity", 1)
+            .attr("y", function(d) { return .5 * h + barPadding;})
+            .attr("height", function(d) { return .25*d.Closed; });
+      
+      chart.selectAll(".closed")
+      .on("mouseover", function(d){ 
+                          d3.select(this).classed("active", true);
+                          $("#count").html(d.Closed + ' requests closed on ' + d.date);
+      })
+      .on("mouseout", function(){
+                          d3.select(this).classed("active", false);
+                          //$("#count").html("Count");
+      });
+
+      /*
+      chart.selectAll(".closed")
+          .data(daily_count)
+          .enter()
+          .append("a") // Add a link
+          .attr("xlink:href", function(d) { return 'http://ec2-50-17-41-140.compute-1.amazonaws.com:5000/daily/' + d.date})
+          .append("rect")
+          .attr("class", "closed")
+          .attr("x", function(d, i) {
+                      //console.log('i', i);
+                      return i * (w / daily_count.length);
+          })
+          .attr("y", function(d) {
+                        //console.log('d', d); // d is the object
+                        return .5*h + barPadding;
+          })
+          .attr("width", w/daily_count.length - barPadding)
+          .attr("height", function(d) {
+                        return .25*d.Closed;
+          })
+          .attr("fill-opacity", 0.0001) // try setting this to zero for strange behavior
+          .transition()
+            .duration(400)
+            //.delay(function(d, i) { return i / daily_count.length * 400; })
+            .delay(function(d, i) { return i * daily_count.length; })
+            .attr("fill-opacity", 1);
+      
+      chart.selectAll(".closed")
+      .on("mouseover", function(d){ 
+                          d3.select(this).classed("active", true);
+                          $("#count").html(d.Closed + ' requests closed on ' + d.date);
+      })
+      .on("mouseout", function(){
+                          d3.select(this).classed("active", false);
+                          //$("#count").html("Count");
+      });
+*/
+      
+      });
+  </script>
+  </head>
+  <body>
+    {% include 'navigation.html' %}
+    <h1 style="margin: 10px 0px 20px 10px; font-size: 24px;">SF 311</h1>
+    <div style="margin: 10px 0px 20px 10px; font-size: 20px;" id="count">&nbsp;</div>
+  </body>
+</html>
