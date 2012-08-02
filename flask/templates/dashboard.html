@@ -36,7 +36,16 @@ h2 { font-size: 16px; color: #000; margin-bottom: 0; }
 <script src="http://d3js.org/d3.v2.min.js"></script>
 <script type=text/javascript src="{{url_for('static', filename='js/neighborhood_list.js') }}"></script>
 <script type="text/javascript">
-    console.log(neighborhoods);
+    $(function() {
+        // Set up neighborhoods dropdown
+        for (var i = 0, max = neighborhoods.length; i < max; i++) {
+            $('#neighborhoods')
+                .append($("<option></option")
+                .attr("value", neighborhoods[i])
+                .text(neighborhoods[i]));
+        } 
+        
+    });
 </script>
 </head>
 
@@ -55,10 +64,7 @@ h2 { font-size: 16px; color: #000; margin-bottom: 0; }
             <h3>Neighborhood</h3>
             <form>
                 <select name="neighborhoods" id="neighborhoods">
-                    <option>All...</option>
-                    <option>Mission</option>
-                    <option>Noe Valley</option>
-                    <option>Tenderloin</option>
+                    <option>San Francisco</option>
                 </select>
             </form>
         </div>
