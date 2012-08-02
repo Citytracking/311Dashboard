@@ -303,7 +303,7 @@ def daily_list():
 def get_latest_requests():
     days = request.args.get("days", "60")
     if not days.isdigit():
-        raise "'days' must be a number"
+        raise Exception("'days' must be a number")
 
     res = query_db("""
         SELECT MAX(requested_datetime) AS max_date
