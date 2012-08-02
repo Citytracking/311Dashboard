@@ -3,7 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
-<title>Open 311</title>
+<title>311 Dashboard</title>
 <style>
 body { font-family: 'Helvetica Neue', Helvetica, Arial, sansserif; font-size: 100%; padding: 20px; color: #333; }
 .dashboardCase { width: 960px; margin-right: auto; margin-left: auto;}
@@ -32,6 +32,12 @@ h2 { font-size: 16px; color: #000; margin-bottom: 0; }
 }
 </style>
 <!-- <link href="http://maps.stamen.com/css/bootstrap/bootstrap.css" rel="stylesheet" type="text/css" /> -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+<script src="http://d3js.org/d3.v2.min.js"></script>
+<script type=text/javascript src="{{url_for('static', filename='js/neighborhood_list.js') }}"></script>
+<script type="text/javascript">
+    console.log(neighborhoods);
+</script>
 </head>
 
 <body>
