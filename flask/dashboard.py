@@ -298,6 +298,25 @@ def types_list():
 def daily_list():
     return render_template('daily.html')
     
+
+@app.route("/requests/latest", methods=['POST', 'GET'])
+def get_latest_requests():
+    days = request.args.get("days", "60")
+    if not days.isdigit():
+        raise "'days' must be a number"
+
+    res = query_db("""
+        SELECT MAX(requested_datetime) AS max_date
+        FROM sf_requests
+    """)
+    # print 'latest:', res
+    end_date = res[0]['max_date']
+    # print 'max date:', end_date
+
+    start_date = end_date - timedelta(days=int(days))
+    fmt = '%Y-%m-%d'
+    return get_requests_by_date(start_date.strftime(fmt), end_date.strftime(fmt))
+
 # Handle dates
 @app.route("/requests/daily/<start_day>..<end_day>", methods=['POST', 'GET'])
 def get_requests_by_date(start_day=None, end_day=None):
