@@ -371,5 +371,12 @@ def page_not_found(e):
     return render_template('404.html'), 404
 
 if __name__ == "__main__":
+    import optparse
+    parser = optparse.OptionParser()
+    parser.add_option('--port', dest='port', type='int', default=80)
+    parser.add_option('--host', dest='host', default="0.0.0.0")
+    options, args = parser.parse_args()
+
+
     #app.run()
-    app.run(host='0.0.0.0', port=80)
+    app.run(host=options.host, port=options.port)
