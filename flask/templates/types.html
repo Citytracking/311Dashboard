@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Types</title>
+    <link rel=stylesheet href="{{ url_for('static', filename='bootstrap_sort.css') }}">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+    <script type=text/javascript src="{{ url_for('static', filename='service-list.js') }}"></script
+    <script type=text/javascript src="{{ url_for('static', filename='bootstrap-dropdown.js') }}"></script>
+    <script type="text/javascript">
+      var base_url = 'http://ec2-50-17-41-140.compute-1.amazonaws.com:5000/';
+      
+      function add_types() {
+        var count = 0;
+
+        for(var key in service_list) {
+          $('#neighborhood-list').append('<div id="' + count + '"><b>' + key + '</b></div>')
+          console.log(key);
+          for(var j=0; j < service_list[key].length; j++) {
+            $('#' + count).append('<ul><li><a href="' + base_url + 'types/' + service_list[key][j].service_code + '">' + service_list[key][j].service_name + ' (' + service_list[key][j].service_code + ') </a></li><li>' + service_list[key][j].description + '</li></ul>');
+          }
+          count++;
+        }
+      }
+    </script>
+  </head>
+  <body onload="add_types()">
+    {% include 'navigation.html' %}
+    <h1 style="margin: 10px 0px 20px 10px">Types</h1>
+    <br>
+    <div style="margin: 10px 0px 20px 10px" id="neighborhood-list">
+    </div>
+  </body>
+</html>
