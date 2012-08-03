@@ -23,15 +23,39 @@ h2 { font-size: 16px; color: #000; margin-bottom: 0; }
 .chart ul {float: right; }
 .chart li { list-style: none; margin-bottom: 20px;  color: #999; font-size: 14px; }
 .chart .requestCount { font-weight: bold; color: #333; font-size: 1.5em; } 
-.chartArea { width: 900px; height: 140px; /* TEMP --> */ background-color: #FF9;}
+/*.chartArea { width: 900px; height: 140px; background-color: #FF9;}*/
 
 #map {
     width: 960px; 
-    height: 620px; 
+    height: 520px; 
 }
 
 .typeList { float: right; background-color: #FFF; margin: 20px; padding: 10px; }
 .typeList li { line-height: 1.5em; }
+
+.chartArea {
+  margin: 0px 0px 0px 10px;
+  cursor: pointer;
+}
+
+/*
+.chart rect {
+  fill: #333;
+}
+*/
+
+.open {
+  fill: #cacaca;
+}
+
+.closed {
+  fill: #929292;
+}
+
+.active {
+  fill: #333;
+}
+
 }
 </style>
 <link rel="stylesheet" href="http://leaflet.cloudmade.com/dist/leaflet.css" />
@@ -45,51 +69,237 @@ h2 { font-size: 16px; color: #000; margin-bottom: 0; }
 <script src="http://leaflet.cloudmade.com/dist/leaflet.js"></script>
 <script type="text/javascript">
     $(function() {
+        var map,
+            chart;
+            
+        function update_statistics(path) {
+            d3.json(path, function(data) {
+                console.log('average response time', data[0]['avg_response_time']);
+                
+                $('#response-time').html(Math.round(data[0]['avg_response_time']) + ' Hours');
+            });
+        }
+        
+        function redraw_bar_chart(path) {
+            console.log('redrawing', path);
+          
+            var w = 850;
+            var h = 180;
+            var barPadding = 1;
+                      
+            d3.json(path, function(daily_count) {
+                chart.selectAll(".open")
+                     .data(daily_count)
+                     .transition()
+                        .duration(400)
+                        //.delay(function(d, i) { return i * daily_count.length; })
+                        .attr("fill-opacity", 1)
+                        .attr("y", function(d) { return h - 1.25*d.Open - .5 * h;})
+                        .attr("height", function(d) { return 1.25*d.Open; });
+                
+                chart.selectAll(".closed")
+                     .data(daily_count)
+                     .transition()
+                        .duration(400)
+                        //.delay(function(d, i) { return i * daily_count.length; })
+                        .attr("fill-opacity", 1)
+                        .attr("y", function(d) { return .5 * h + barPadding;})
+                        .attr("height", function(d) { return 1.25*d.Closed; });
+            });
+        }
+        
+        function draw_bar_chart(path) {
+            d3.json(path, function(daily_count) {
+                  console.log('daily count', daily_count);
+                
+                  var w = 850;
+                  var h = 180;
+                  var barPadding = 1;
+            
+                  chart = d3.select("#chart")
+                              .append("svg")
+                              .attr("class", "chartArea")
+                              .attr("width", w)
+                              .attr("height", h);
+            
+                  chart.selectAll(".open")
+                      .data(daily_count)
+                      .enter()
+                      //.append("a") // Add a link
+                      //.attr("xlink:href", function(d) { return '/daily/' + d.date})
+                      .append("rect")
+                      .attr("class", "open")
+                      .attr("x", function(d, i) {
+                          //console.log('i', i);
+                          return i * (w / daily_count.length);
+                      })
+                      .attr("y", .5*h)
+                      .attr("height", 0)
+                      .attr("width", w/daily_count.length - barPadding)
+                      .attr("fill-opacity", .0001) // try setting this to zero for strange behavior
+                      .transition()
+                        .duration(400)
+                        //.delay(function(d, i) { return i / daily_count.length * 400; })
+                        .delay(function(d, i) { return i * daily_count.length; })
+                        .attr("fill-opacity", 1)
+                        .attr("y", function(d) { return h - .25*d.Open - .5 * h;})
+                        .attr("height", function(d) { return .25*d.Open; });
+            
+                  chart.selectAll(".open")
+                    .on("mouseover", function(d){
+                        d3.select(this).classed("active", true);
+                        $("#open-count").html(d.Open);
+                      })
+                      .on("mouseout", function(){
+                          d3.select(this).classed("active", false);
+                          //$("#count").html("Count");
+            
+                      })
+            
+                  chart.selectAll(".closed")
+                      .data(daily_count)
+                      .enter()
+                      //.append("a") // Add a link
+                      //.attr("xlink:href", function(d) { return '/daily/' + d.date})
+                      .append("rect")
+                      .attr("class", "closed")
+                      .attr("x", function(d, i) {
+                                  //console.log('i', i);
+                                  return i * (w / daily_count.length);
+                      })
+                      .attr("y", .5*h)
+                      .attr("height", 0)
+                      .attr("width", w/daily_count.length - barPadding)
+                      .attr("fill-opacity", 0.0001) // try setting this to zero for strange behavior
+                      .transition()
+                        .duration(400)
+                        .delay(function(d, i) { return i * daily_count.length; })
+                        .attr("fill-opacity", 1)
+                        .attr("y", function(d) { return .5 * h + barPadding;})
+                        .attr("height", function(d) { return .25*d.Closed; });
+                  
+                  chart.selectAll(".closed")
+                  .on("mouseover", function(d){ 
+                                      d3.select(this).classed("active", true);
+                                      $("#closed-count").html(d.Closed);
+                  })
+                  .on("mouseout", function(){
+                                      d3.select(this).classed("active", false);
+                  });
+            });
+        }
+        
+        function changeViews() {
+            var bar_path = '/daily_count';
+            var stats_path = '/avg_resp_time';
+            
+            /* Generalize this for other cities */
+            if ($('#neighborhoods').val() != 'San Francisco') {
+                bar_path = bar_path + '_by_neighborhood?neighborhood=' + $('#neighborhoods').val();
+                stats_path = stats_path + '?neighborhood=' + $('#neighborhoods').val();
+            }
+            
+            changeNeighborhood();
+            redraw_bar_chart(bar_path);
+            update_statistics(stats_path);
+        }
+                
+        function changeNeighborhood() {
+            var neighborhood = $('#neighborhoods').val();
+            
+            if (neighborhood !== 'San Francisco') {
+                var neighborhood_lat = $('#neighborhoods').children(":selected").attr('lat');
+                var neighborhood_lon = $('#neighborhoods').children(":selected").attr('lon');
+                map.setView(new L.LatLng(neighborhood_lat, neighborhood_lon), 14);
+            } else {
+                map.setView(new L.LatLng(37.77, -122.41), 12); // Put this center in a config
+            }
+        }
+    
+        // Set today's date
+        var date = new Date();
+        var days =["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Satruday"];
+        var months = ["January", "February", "March", "April", "May", "June", "July",
+            "August", "September", "October", "November", "December"];
+            
+                
+        $('#current-date').html(months[date.getMonth()] + ' ' + date.getUTCDate() + ', ' + date.getFullYear());
+    
         // Set up neighborhoods dropdown
-        for (var i = 0, max = neighborhoods.length; i < max; i++) {
-            $('#neighborhoods')
-                .append($("<option></option")
-                .attr("value", neighborhoods[i])
-                .text(neighborhoods[i]));
-        }
         
-        // Deal with the map
+        d3.csv("{{url_for('static', filename='js/neighborhood_list.csv')}}", function(neighborhoods) {
+            //console.log(neighborhoods);
+            
+            for (var i = 0, max = neighborhoods.length; i < max; i++) {
+                $('#neighborhoods')
+                    .append($("<option></option")
+                    .attr("value", neighborhoods[i]['neighborhood'])
+                    .attr("lat", neighborhoods[i]['lat'])
+                    .attr("lon", neighborhoods[i]['lon'])
+                    .text(neighborhoods[i]['neighborhood']));   
+            }
+            
+            $('#neighborhoods').change(changeViews);
+        });
         
-        var map = new L.Map('map');
         
-        toner = new L.TileLayer('http://tile.stamen.com/toner/{z}/{x}/{y}.png', {maxZoom: 18});
+        // Handle statistics
         
-        map.setView(new L.LatLng(37.77, -122.41), 12).addLayer(toner);
+            // Avg Response Time
         
-        var defaultStyle = {
-            color: "#333",
-            weight: 3,
-            opacity: .6,
-            fillOpacity: 0,
-            fillColor: "#000"
-        };
+        d3.json('/avg_resp_time', function(data) {
+            $('#response-time').html(Math.round(data[0]['avg_response_time']) + ' Hours');
+        });
         
-        var markerStyle = {
-            radius: 3,
-            color: "#FF0000",
-            fillColor: "#FF0000",
-            weight: 1,
-            opacity: 1,
-            fillOpacity: .5
-        };
+        // Set up the graph
         
-        // Data for the map
-        /*
-        var results = {{ results|safe }};
+        draw_bar_chart('/daily_count');
+                
+        // Set up the map
         
-        for (var i=0, max = results.length; i < max; i++) {
-            //console.log(results[i]);
-            var marker = new L.CircleMarker(new L.LatLng(results[i].lat, results[i].lon), markerStyle);
-            map.addLayer(marker);
+        d3.json('/requests/latest?days=60', function(requests) {
+            //console.log(requests);
+            
+            var data = d3.nest()
+                .key(function(d) { return d.requested_date; })
+                .map(requests);
+            
+            console.log(data);
+            
+            // Set up the map
         
-            //$('#requests').append('<tr><td>' + results[i].service_name + '</td><td>' + results[i].status + '</td><td>' + results[i].date + '</td><td>' + results[i].expected_datetime + '</td><td>' + results[i].updated_datetime + '</td><td>' + results[i].lat + ', ' + results[i].lon + '</td></tr>')
-        }
-        */
+            map = new L.Map('map');
+            
+            toner = new L.TileLayer('http://tile.stamen.com/toner-lite/{z}/{x}/{y}.png', {maxZoom: 18});
+            
+            map.setView(new L.LatLng(37.77, -122.41), 12).addLayer(toner);
+            
+            var defaultStyle = {
+                color: "#333",
+                weight: 3,
+                opacity: .6,
+                fillOpacity: 0,
+                fillColor: "#000"
+            };
+            
+            var markerStyle = {
+                radius: 3,
+                color: "#FF0000",
+                fillColor: "#FF0000",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: .5
+            };    
+            
+            for (var i=0, max = requests.length; i < max; i++) {
+                var marker = new L.CircleMarker(new L.LatLng(requests[i].lat, requests[i].lon), markerStyle);
+                map.addLayer(marker);
+            
+                //$('#requests').append('<tr><td>' + results[i].service_name + '</td><td>' + results[i].status + '</td><td>' + results[i].date + '</td><td>' + results[i].expected_datetime + '</td><td>' + results[i].updated_datetime + '</td><td>' + results[i].lat + ', ' + results[i].lon + '</td></tr>')
+            
+                marker.bindPopup('Request Type: ' + requests[i].service_name);
+            }
+        });
     });
 </script>
 </head>
@@ -98,12 +308,12 @@ h2 { font-size: 16px; color: #000; margin-bottom: 0; }
 <div class="dashboardCase">
     <div class="searchBox">
         <form>
-            <input type="text" value="place or ticket" />
-            <button>Find</button>
+            <input type="text" placeholder="location or ticket #" />
+            <button>Search</button>
         </form>
     </div>
     <h1> <span class="cityName">San Francisco</span> 311 Dashboard </h1>
-    <h2>July 17, 2012</h2>
+    <h2 id="current-date">Date</h2>
     <div class="report">
         <div>
             <h3>Neighborhood</h3>
@@ -118,24 +328,24 @@ h2 { font-size: 16px; color: #000; margin-bottom: 0; }
             Sidewalk Cleaning 
         </div>
         <div>
-            <h3>Least Requests Today</h3>
-            Graffiti 
+            <h3>Number of Stale Requests</h3>
+            <span id="stale">30</span> 
         </div>
         <div>
             <h3>Average Response Time</h3>
-            6 days 
+            <span id='response-time'>&nbsp;</span> 
         </div>
     </div>
     <div class="chart">
-        <ul>
-            <li>
-            	<span class="requestCount">20</span><br />
-				Closed</li>
-            <li>
-            	<span class="requestCount">59</span><br />
-				Open</li>
-        </ul>    
-        <div class="chartArea"></div>
+        <div style="float:right">
+            <div style="position:relative; top: 50px">
+                <span id="open-count" class="requestCount">#</span><br /> Open
+			</div>
+			<div style="position:relative; top: 60px">
+                <span id="closed-count" class="requestCount">#</span><br /> Closed
+			</div>
+        </div>
+        <div id="chart" class="chartArea"></div>
     </div>
     <div id="map">
         <!--

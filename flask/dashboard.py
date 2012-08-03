@@ -252,9 +252,114 @@ def types(type=None, service_code=None, count=None, total_count=None, weekly_cou
     else:
         return create_null_response()
 
+@app.route("/daily_count")
+def daily_count(count=None):
+    days = request.args.get("days", 60)
+    
+    daily_count_res = query_db("""
+        SELECT 
+            CAST(DATE(requested_datetime) as text), COUNT(*), status 
+        FROM sf_requests 
+        WHERE requested_datetime BETWEEN NOW() - INTERVAL '(%s) DAY' AND NOW() 
+        GROUP BY DATE(requested_datetime), status 
+        ORDER BY DATE(requested_datetime) ASC
+    """, (days,))
+
+    #print daily_count_res
+
+    daily_count_list = []
+
+    for i,j in enumerate(daily_count_res):
+        if (i+1) == len(daily_count_res):
+            break
+        elif daily_count_res[i]['date'] == daily_count_res[i+1]['date']:
+            #daily_count_list.append({str(int(.5*i)): {daily_count_res[i]['date']: {daily_count_res[i]['status']:daily_count_res[i]['count'], daily_count_res[i+1]['status']: daily_count_res[i+1]['count']}}})
+            daily_count_list.append({'date': daily_count_res[i]['date'], daily_count_res[i]['status']:daily_count_res[i]['count'], daily_count_res[i+1]['status']: daily_count_res[i+1]['count']})
+        else:
+            continue
+
+    #print daily_count_list
+
+    return json.dumps(daily_count_list)
+    
+@app.route("/daily_count_by_neighborhood")
+def daily_count_by_neighborhood(count=None):
+    days = request.args.get("days", 60)
+    neighborhood = request.args.get("neighborhood")
+    
+    end_date = datetime.now()
+    
+    start_date = end_date - timedelta(days=int(days))
+    
+    fmt_start_date = datetime.strftime(start_date, '%Y-%m-%d')
+    
+    fmt_end_date = datetime.strftime(end_date, '%Y-%m-%d')
+        
+    daily_count_res = query_db("""
+        SELECT 
+            CAST(DATE(r.requested_datetime) as text), count(r.*), r.status
+        FROM sf_requests as r
+        JOIN pn_geoms as p
+        ON ST_INTERSECTS(geom, ST_GeomFromText('POINT(' || r.lon || ' ' || r.lat || ')'))
+        WHERE p.neighborho=(%s) AND requested_datetime BETWEEN DATE((%s)) AND DATE((%s))
+        GROUP BY date(r.requested_datetime), r.status order by date(r.requested_datetime) ASC
+    """, (neighborhood, fmt_start_date, fmt_end_date))
+    
+    print daily_count_res
+    
+    input_exhausted = False
+    
+    date = start_date
+    
+    count = 0
+    
+    input = daily_count_res[count]
+    
+    next_date = start_date
+    
+    results = []
+    
+    while date <= end_date:
+        info = {}
+        
+        info['date'] = datetime.strftime(date, '%Y-%m-%d')
+        info['Open'] = 0
+        info['Closed'] = 0
+        
+        while not input_exhausted and info['date'] == input['date']:
+            if input['status'] == 'Closed':
+                info['Closed'] += input['count']
+            elif input['status'] == 'Open':
+                info['Open'] += input['count']
+                
+            count = count + 1
+            
+            if count >= len(daily_count_res):
+                input_exhausted = True
+            else:
+                input = daily_count_res[count]
+        
+        date = date + timedelta(1)
+        
+        results.append(info)
+    """
+    for d in daily_count_res:
+        if d['date'] == fmt_start_date:
+            print 'found date'
+    """
+    
+    return json.dumps(results)
+    
 @app.route("/")
 def home(daily_count=None):
-    daily_count_res = query_db("""SELECT CAST(DATE(requested_datetime) as text), COUNT(*), status FROM sf_requests WHERE requested_datetime BETWEEN NOW() - INTERVAL '60 DAY' AND NOW() GROUP BY DATE(requested_datetime), status ORDER BY DATE(requested_datetime) ASC""")
+    daily_count_res = query_db("""
+        SELECT 
+            CAST(DATE(requested_datetime) as text), COUNT(*), status 
+        FROM sf_requests 
+        WHERE requested_datetime BETWEEN NOW() - INTERVAL '60 DAY' AND NOW() 
+        GROUP BY DATE(requested_datetime), status 
+        ORDER BY DATE(requested_datetime) ASC
+    """)
 
     #print daily_count_res
 
@@ -327,8 +432,17 @@ def get_requests_by_date(start_day=None, end_day=None):
         start_date = parse_date(start_day)
         end_date = (end_day and parse_date(end_day)) or start_date + ONE_DAY
         
-        res = query_db("""SELECT status, service_name, service_request_id, CAST(DATE(requested_datetime) AS text), CAST(DATE(updated_datetime) AS text) as updated_datetime, CAST(DATE(expected_datetime) AS text) as expected_datetime, address, lat, lon FROM sf_requests WHERE requested_datetime BETWEEN (%s) AND (%s) ORDER BY requested_datetime ASC Limit 1000""", (start_date, end_date))
-
+        res = query_db("""
+            SELECT 
+                status, service_name, service_request_id, 
+                CAST(DATE(requested_datetime)AS text) as requested_date, 
+                CAST(DATE(updated_datetime) AS text) as updated_date, 
+                CAST(DATE(expected_datetime) AS text) as expected_date, address, 
+                lat, lon 
+            FROM sf_requests 
+            WHERE requested_datetime BETWEEN (%s) AND (%s) 
+            ORDER BY requested_datetime ASC Limit 1000
+        """, (start_date, end_date))
         return json.dumps(res)
     else:
         return 'none'
@@ -380,7 +494,32 @@ def request_display_by_date(type=None, start_day=None, end_day=None):
             return render_template('requests_range.html', results=requests_json)
     else:
         return create_null_response()
-
+        
+@app.route("/avg_resp_time")
+def avg_resp_time():
+    neighborhood = request.args.get('neighborhood', None)
+    
+    if neighborhood:
+        res = query_db("""
+            SELECT
+                AVG((EXTRACT(Epoch from r.updated_datetime - r.requested_datetime)/3600)::Integer) AS "avg_response_time"
+            FROM sf_requests as r
+            JOIN pn_geoms as p
+            ON ST_INTERSECTS(geom, ST_GeomFromText('POINT(' || r.lon || ' ' || r.lat || ')'))
+            WHERE p.neighborho=(%s) AND r.status='Closed' AND r.requested_datetime BETWEEN now() - INTERVAL '7 day' AND now()
+        """, (neighborhood,))
+                
+        return json.dumps(res)
+    else:
+        res = query_db("""
+            SELECT
+                AVG((EXTRACT(Epoch from updated_datetime - requested_datetime)/3600)::Integer) as "avg_response_time"
+            FROM sf_requests
+            WHERE status='Closed' AND requested_datetime between now() - interval '7 day' and now()
+        """)
+        
+        return json.dumps(res)
+                    
 @app.route("/dashboard/")
 def dashboard():
     return render_template('dashboard.html')
