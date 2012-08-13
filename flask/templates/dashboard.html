@@ -1,139 +1,643 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-
-<title>311 Dashboard</title>
-<style>
-body { font-family: 'Helvetica Neue', Helvetica, Arial, sansserif; font-size: 100%; padding: 20px; color: #333; }
-.dashboardCase { width: 960px; margin-right: auto; margin-left: auto;}
-.cityName {font-weight: normal;	color: #999;}
-
-h1 { margin-top: 0; font-size: 24px;  }
-h2 { font-size: 16px; color: #000; margin-bottom: 0; }
-
-.searchBox {float: right;}
-
-.report {margin-bottom: 20px; }
-.report select { font-size: 14px; }
-.report h3 { font-size: 14px; color: #999; font-weight: normal; margin-bottom: 0;  }
-.report div {width: 240px;float: left; font-size: 1.5em; color: #000; }
-
-.chart { clear: both; margin-top: 100px; margin-bottom: 30px; }
-.chart ul {float: right; }
-.chart li { list-style: none; margin-bottom: 20px;  color: #999; font-size: 14px; }
-.chart .requestCount { font-weight: bold; color: #333; font-size: 1.5em; } 
-/*.chartArea { width: 900px; height: 140px; background-color: #FF9;}*/
-
-#map {
-    width: 960px; 
-    height: 520px; 
-}
-
-.typeList { float: right; background-color: #FFF; margin: 20px; padding: 10px; }
-.typeList li { line-height: 1.5em; }
-
-.chartArea {
-  margin: 0px 0px 0px 10px;
-  cursor: pointer;
-}
-
-/*
-.chart rect {
-  fill: #333;
-}
-*/
-
-.open {
-  fill: #cacaca;
-}
-
-.closed {
-  fill: #929292;
-}
-
-.active {
-  fill: #333;
-}
-
-}
-</style>
-<link rel="stylesheet" href="http://leaflet.cloudmade.com/dist/leaflet.css" />
-<!--[if lte IE 8]><link rel="stylesheet" href="http://leaflet.cloudmade.com/dist/leaflet.ie.css" /><![endif]-->
-
-<!-- <link href="http://maps.stamen.com/css/bootstrap/bootstrap.css" rel="stylesheet" type="text/css" /> -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-<script src="http://d3js.org/d3.v2.min.js"></script>
-<script type=text/javascript src="{{url_for('static', filename='js/neighborhood_list.js') }}"></script>
-<!--<script type=text/javascript src="{{url_for('static', filename='js/leaflet.js') }}"></script>-->
-<script src="http://leaflet.cloudmade.com/dist/leaflet.js"></script>
-<script type="text/javascript">
-    $(function() {
-        var map,
-            chart;
-            
-        function update_statistics(path) {
-            d3.json(path, function(data) {
-                console.log('average response time', data[0]['avg_response_time']);
-                
-                $('#response-time').html(Math.round(data[0]['avg_response_time']) + ' Hours');
-            });
+    <title>311 Dashboard</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.21/themes/ui-lightness/jquery-ui.css" />
+    <style>
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sansserif; font-size: 100%; padding: 20px; color: #333; }
+    .dashboardCase { width: 960px; margin-right: auto; margin-left: auto;}
+    .cityName {font-weight: normal;	color: #999;}
+    
+    h1 { margin-top: 0; font-size: 24px;  }
+    h2 { font-size: 16px; color: #000; margin-bottom: 0; }
+    
+    .searchBox {float: right;}
+    
+    .report {margin-bottom: 20px; }
+    .report select { font-size: 14px; }
+    .report h3 { font-size: 14px; color: #999; font-weight: normal; margin-bottom: 0;  }
+    .report div {width: 240px;float: left; font-size: 1.5em; color: #000; }
+    
+    .chart { clear: both; margin-top: 0px; margin-bottom: 0px; }
+    .chart ul {float: right; }
+    .chart li { list-style: none; margin-bottom: 20px;  color: #999; font-size: 14px; }
+    .chart .requestCount { font-weight: bold; color: #333; font-size: 1.5em; }
+    
+    #map {
+        width: 960px; 
+        height: 520px;
+        position: absolute;
+        margin-top: 20px; 
+    }
+    
+    .ui-slider .ui-slider-handle {
+        width: .6em;
+    }
+    
+    .typeList { float: right; background-color: #FFF; margin: 20px; padding: 10px; }
+    .typeList li { line-height: 1.5em; }
+    
+    .chartArea {
+      margin: 0px 0px 0px 10px;
+      cursor: pointer;
+    }
+    
+    .open {
+      /*fill: #cacaca;*/
+    }
+    
+    .closed {
+      /*fill: #929292;*/
+    }
+    
+    .active {
+      fill: #333;
+    }
+    
+    a {
+        text-decoration: none;
+    }
+    
+    .type {
+        display: block;
+        padding: 5px;
+        margin-top: 8px;
+        /*background: #CCC;*/
+        cursor: pointer;
+        /*font-weight: 500;*/
+    }
+    
+    
+    .type_selected {
+        background: #FFF;
+    }
+    
+    .type_deselected {
+        color: #CCC;
+        /*font-weight: normal;*/
+    }
+    
+    .sr_text {
+        text-decoration: underline;
+        color: #0099cc;
+    }
+    
+    .sr_text_deselected {
+        color: #CCC;
+        text-decoration: none;
+    }
+    
+    .sr_image {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+    }
+        .ss_selected {
+            background: url('{{url_for('static', filename='images/marker_images/sidewalk-street.png') }}') no-repeat;
         }
         
-        function redraw_bar_chart(path) {
-            console.log('redrawing', path);
-          
-            var w = 850;
-            var h = 180;
-            var barPadding = 1;
-                      
-            d3.json(path, function(daily_count) {
+        .graffiti_selected {
+            background: url('{{url_for('static', filename='images/marker_images/graffiti.png') }}') no-repeat;
+        }
+        
+        .garbage_selected {
+            background: url('{{url_for('static', filename='images/marker_images/garbage.png') }}') no-repeat;
+        }
+        
+        .sewage_selected {
+            background: url('{{url_for('static', filename='images/marker_images/sewage.png') }}') no-repeat;
+        }
+        
+        .trees_selected {
+            background: url('{{url_for('static', filename='images/marker_images/trees.png') }}') no-repeat;
+        }
+        
+        .water_selected {
+            background: url('{{url_for('static', filename='images/marker_images/water.png') }}') no-repeat;
+        }
+        
+        .vehicle_selected {
+            background: url('{{url_for('static', filename='images/marker_images/vehicle.png') }}') no-repeat;
+        }
+        
+        .ss_off {
+            background: url('{{url_for('static', filename='images/marker_images/sidewalk-street_off.png') }}') no-repeat;
+        }
+        
+        .graffiti_off {
+            background: url('{{url_for('static', filename='images/marker_images/graffiti_off.png') }}') no-repeat;
+        }
+        
+        .garbage_off {
+            background: url('{{url_for('static', filename='images/marker_images/garbage_off.png') }}') no-repeat;
+        }
+        
+        .sewage_off {
+            background: url('{{url_for('static', filename='images/marker_images/sewage_off.png') }}') no-repeat;
+        }
+        
+        .trees_off {
+            background: url('{{url_for('static', filename='images/marker_images/trees_off.png') }}') no-repeat;
+        }
+        
+        .water_off {
+            background: url('{{url_for('static', filename='images/marker_images/water_off.png') }}') no-repeat;
+        }
+        
+        .vehicle_off {
+            background: url('{{url_for('static', filename='images/marker_images/vehicle_off.png') }}') no-repeat;
+        }
+    
+    }
+    </style>
+    <link rel="stylesheet" href="http://leaflet.cloudmade.com/dist/leaflet.css" />
+    <!--[if lte IE 8]><link rel="stylesheet" href="http://leaflet.cloudmade.com/dist/leaflet.ie.css" /><![endif]-->
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.21/jquery-ui.min.js"></script>
+    <script type=text/javascript src="{{url_for('static', filename='js/drag_range.js') }}"></script>
+    
+    <script src="http://d3js.org/d3.v2.min.js"></script>
+    <script type=text/javascript src="{{url_for('static', filename='new_service_list.js') }}"></script>
+    <script type=text/javascript src="{{url_for('static', filename='js/neighborhood_list.js') }}"></script>
+    <!--<script type=text/javascript src="{{url_for('static', filename='js/leaflet.js') }}"></script>-->
+    <script src="http://leaflet.cloudmade.com/dist/leaflet.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.3.3/underscore-min.js"></script>
+    <script type="text/javascript">
+        /*
+         $(function() {
+            $('#go').click(function() {
+    
+            var order = $('#order').val() == ""? null: $('#order').val().split(",");
+            $('#container').reOrder(order, 'someid');
+            });
+        });
+    
+        (function($) {
+            $.fn.reOrder = function(array, prefix) {
+              return this.each(function() {
+                prefix = prefix || "";
+            
+                if (array) {    
+                  for(var i=0; i < array.length; i++) 
+                    array[i] = $('#' + prefix + array[i]);
+            
+                  $(this).empty();  
+            
+                  for(var i=0; i < array.length; i++)
+                    $(this).append(array[i]);      
+                }
+              });    
+            }
+        })(jQuery);
+        */
+    
+        var graf = "{{url_for('static', filename='images/marker_images/graffiti.png') }}";
+        var garb = "{{url_for('static', filename='images/marker_images/garbage.png') }}";
+        var sew = "{{url_for('static', filename='images/marker_images/sewage.png') }}";
+        var ss = "{{url_for('static', filename='images/marker_images/sidewalk-street.png') }}";
+        var trees = "{{url_for('static', filename='images/marker_images/trees.png') }}";
+        var vehic = "{{url_for('static', filename='images/marker_images/vehicle.png') }}";
+        var wat = "{{url_for('static', filename='images/marker_images/water.png') }}";
+        
+        var graf_off = "{{url_for('static', filename='images/marker_images/graffiti_off.png') }}";
+        var garb_off = "{{url_for('static', filename='images/marker_images/garbage_off.png') }}";
+        var sew_off = "{{url_for('static', filename='images/marker_images/sewage_off.png') }}";
+        var ss_off = "{{url_for('static', filename='images/marker_images/sidewalk-street_off.png') }}";
+        var trees_off = "{{url_for('static', filename='images/marker_images/trees_off.png') }}";
+        var vehic_off = "{{url_for('static', filename='images/marker_images/vehicle_off.png') }}";
+        var wat_off = "{{url_for('static', filename='images/marker_images/water_off.png') }}";
+        
+        var mIcon = L.Icon.extend({ options: { iconSize: [15,15] } });
+        //var mIcon = L.divIcon({className: class});
+        
+        var grafIcon = new mIcon({iconUrl: graf, className: 'graffiti_icon'});
+        var garbIcon = new mIcon({iconUrl: garb, className: 'garbage_icon'});
+        var sewIcon = new mIcon({iconUrl: sew, className: 'sewage_icon'});
+        var ssIcon = new mIcon({iconUrl: ss, className: 'ss_icon'});
+        var treesIcon = new mIcon({iconUrl: trees, className: 'trees_icon'});
+        var vehicIcon = new mIcon({iconUrl: vehic, className: 'vehicle_icon'});
+        var watIcon = new mIcon({iconUrl: wat, className: 'water_icon'});
+        
+        // Define which markers are on or off
+        var initialized = true;
+        
+        var markers_switch = {'Sidewalk or Street': false, 'Garbage': false, 'Defacement / Graffiti': false,
+            'Sewage': false, 'Vehicles': false, 'Trees': false, 'Water': false};
+        
+        $(function() {                
+            var map,
+                map_requests,
+                chart,
+                chart2,
+                chart3,
+                markers = [],
+                date_range = [],
+                sf_max_open,
+                sf_max_closed,
+                dc;
+            
+            // New
+            
+            var layer_groups_by_date = {};
+            
+            var markers_by_type = {'Sidewalk or Street': {}, 'Garbage': {}, 'Defacement / Graffiti': {},
+                'Sewage': {}, 'Vehicles': {}, 'Trees': {}, 'Water': {}};
+                
+            var sr_counts_by_date;
+                                
+            // Handle Service Request Selection
+            $('#ss').click(function() {
+                handleSRDisplay('ss');
+            })
+            
+            /*
+            .mouseenter(function() {
+                //console.log('mouse enter');
+                
+                if (!markers_switch['Sidewalk or Street']) {
+                    $(this).addClass('type_selected');
+                }
+            }).mouseleave(function() {
+                //console.log('mouse leave');
+                
+                if (!markers_switch['Sidewalk or Street']) {
+                    $(this).removeClass('type_selected');
+                }
+            });
+            */
+            
+            $('#graffiti').click(function() {
+                handleSRDisplay('graffiti');
+            });
+            
+            $('#sewage').click(function() {
+                handleSRDisplay('sewage');
+            });
+            
+            $('#water').click(function() {
+                handleSRDisplay('water');
+            });
+            
+            $('#vehicle').click(function() {
+                handleSRDisplay('vehicle');
+            });
+            
+            $('#trees').click(function() {
+                handleSRDisplay('trees');
+            });
+            
+            $('#garbage').click(function() {
+                handleSRDisplay('garbage');
+            });
+            
+            function handleSRDisplay(type) {            
+                var shortened_types = {'ss': 'Sidewalk or Street', 'garbage': 'Garbage', 'graffiti': 'Defacement / Graffiti', 'sewage': 'Sewage',
+                    'trees': 'Trees', 'vehicle': 'Vehicles', 'water': 'Water'};
+                                    
+                var all_types = ['ss','garbage','graffiti','sewage','trees','vehicle','water'];
+                
+                markers_switch[shortened_types[type]] = !markers_switch[shortened_types[type]];
+                
+                for (var i=0, max=all_types.length; i < max; i++) {
+                    if (!markers_switch[shortened_types[all_types[i]]]) {
+                        //console.log(i);
+                        $('.' + all_types[i] + '_icon').css('display', 'none');
+                        
+                        //$('#' + type_conversion[all_types[i]]).toggleClass('type_deselected');
+                        
+                        $('#' + all_types[i] + '_text').addClass('sr_text_deselected');
+                        
+                        $('.' + all_types[i] + '_selected').addClass(all_types[i] + '_off');
+                        
+                    } else {
+                        $('.' + all_types[i] + '_icon').css('display', 'block');
+                        
+                        $('#' + all_types[i] + '_text').removeClass('sr_text_deselected');
+                        $('.' + all_types[i] + '_selected').removeClass(all_types[i] + '_off');
+                    }
+                }
+                                           
+                initialized = false;
+            
+                /*
+                // If you select and deselect one thing
+                if (markers_switch[shortened_types[type]]) {
+                    for (date in markers_by_type[shortened_types[type]]) {
+                        if (date_range.indexOf(date) != -1) {
+                            for (marker in markers_by_type[shortened_types[type]][date]) {
+                                map.addLayer(markers_by_type[shortened_types[type]][date][marker]);
+                            }
+                        }
+                    }
+                } else {
+                    for (date in markers_by_type[shortened_types[type]]) {
+                        for (marker in markers_by_type[shortened_types[type]][date]) {
+                            map.removeLayer(markers_by_type[shortened_types[type]][date][marker]);
+                        }
+                    }
+                }
+                */
+            }
+            
+            function setSRIconDisplay() {
+                var shortened_types = {'Sidewalk or Street':'ss', 'Garbage':'garbage', 'Defacement / Graffiti': 'graffiti', 'Sewage': 'sewage',
+                    'Trees': 'trees', 'Vehicles': 'vehicle', 'Water': 'water'};
+                
+                for (var ms in markers_switch) {
+                    if ((!markers_switch[ms]) && !initialized) {
+                        console.log('none');
+                        $('.' + shortened_types[ms] + '_icon').css('display', 'none');
+                    } else if (!initialized) {
+                        $('.' + shortened_types[ms] + '_icon').css('display', 'block');
+                    }
+                }
+            }
+            
+            var selected_range;
+                
+            var format = d3.time.format('%Y-%m-%d');
+            
+            // Cache the results
+            var requests_by_date = {};
+            
+            var mStyle = {
+                    radius: 3,
+                    color: "#FF0000",
+                    fillColor: "#FF0000",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: .5
+            };    
+                
+            function update_statistics(path) {
+                d3.json(path, function(data) {
+                    //console.log('average response time', data[0]['avg_response_time']);
+                    
+                    $('#response-time').html(Math.round(data[0]['avg_response_time']) + ' Hours');
+                });
+            }
+            
+            function resetBarColors() {
                 chart.selectAll(".open")
-                     .data(daily_count)
-                     .transition()
-                        .duration(400)
-                        //.delay(function(d, i) { return i * daily_count.length; })
-                        .attr("fill-opacity", 1)
-                        .attr("y", function(d) { return h - 1.25*d.Open - .5 * h;})
-                        .attr("height", function(d) { return 1.25*d.Open; });
+                    .attr("fill", function(d, i) { if ((i < selected_range[0]) || (i > selected_range[1])) { return "#f2f2f2" } else { return "#cacaca" } } );
                 
-                chart.selectAll(".closed")
-                     .data(daily_count)
-                     .transition()
-                        .duration(400)
-                        //.delay(function(d, i) { return i * daily_count.length; })
-                        .attr("fill-opacity", 1)
-                        .attr("y", function(d) { return .5 * h + barPadding;})
-                        .attr("height", function(d) { return 1.25*d.Closed; });
-            });
-        }
-        
-        function draw_bar_chart(path) {
-            d3.json(path, function(daily_count) {
-                  console.log('daily count', daily_count);
-                
-                  var w = 850;
-                  var h = 180;
-                  var barPadding = 1;
+                chart2.selectAll(".closed")
+                    .attr("fill", function(d, i) { if ((i < selected_range[0]) || (i > selected_range[1])) { return "#f2f2f2" } else { return "#929292" } } );
+            }
             
-                  chart = d3.select("#chart")
+            function redraw_bar_chart(path) {
+                var w = 850,
+                    h = 100,
+                    barPadding = 1;
+                                      
+                d3.json(path, function(daily_count) {
+                    // Reset daily count
+                    dc = daily_count;
+                    //console.log('Daily count length is: ' + daily_count.length);
+                    
+                    var max_open = d3.max(daily_count, function(d) { return d.Open; });
+                    var max_closed = d3.max(daily_count, function(d) { return d.Closed; });
+                                    
+                    chart.selectAll(".open")
+                         .data(daily_count)
+                         .transition()
+                            .duration(400)
+                            .attr("fill-opacity", 1)
+                            .attr("y", function(d) { return h - 75*d.Open/max_open - .5 * h + 35; })
+                            .attr("height", function(d) { return 75*d.Open/max_open; });
+                    
+                    
+                    chart2.selectAll(".closed")
+                         .data(daily_count)
+                         .transition()
+                            .duration(400)
+                            .attr("fill-opacity", 1)
+                            .attr("y", function(d) { return .5 * h + barPadding - 35;})
+                            .attr("height", function(d) { return 75*d.Closed/max_closed; });
+                });
+            }
+            
+            function loadRequestsPerDay(path) {
+                d3.csv(path, function(requests) {
+                
+                    var new_requests_by_date = d3.nest()
+                        .key(function(d) { return d.requested_date; })
+                        .map(requests);
+                    
+                    for (var date in new_requests_by_date) {
+                        requests_by_date[date] = new_requests_by_date[date];
+                        
+                        var layer_group_by_date = createLayerGroup(new_requests_by_date[date]);
+                        
+                        layer_groups_by_date[date] = layer_group_by_date;
+                    }
+               }); 
+            }
+            
+            function resetMap(range) {
+                // Check requests by date
+                var start_day = range[0],
+                    sd_arr = start_day.split('-'), // Might want to change this, parse date
+                    end_day = range[1],
+                    ed_arr = end_day.split('-');
+                
+                var start_date = new Date(sd_arr[0],sd_arr[1]-1, sd_arr[2],"0"),
+                    end_date = new Date(ed_arr[0],ed_arr[1]-1, ed_arr[2],"1");
+                
+                var new_date_range = d3.time.day.range(start_date, end_date, 1).map(format);
+                
+                for (var i=0, max=new_date_range.length; i < max; i++) {
+                    if (new_date_range[i] in requests_by_date) {
+                        continue;
+                    } else {
+                        //loadRequestsPerDay(new_date_range[i]);
+                        var path = '/requests/reqs.csv?end_day=' + new_date_range[i] + '&time_delta=5';
+                        
+                        loadRequestsPerDay(path);
+                    }
+                }
+                
+                for (var i=0, max=date_range.length; i < max; i++) {
+                    if (new_date_range.indexOf(date_range[i]) == -1) {
+                        map.removeLayer(layer_groups_by_date[date_range[i]]);
+                    }
+                }
+                
+                for (var i=0, max=new_date_range.length; i < max; i++) {
+                    if (date_range.indexOf(new_date_range[i]) == -1) {
+                        map.addLayer(layer_groups_by_date[new_date_range[i]]);
+                    }
+                }
+                
+                setSRIconDisplay();
+                
+                date_range = new_date_range;
+            }
+            
+            function setTitleDate(date_string) {            
+                var date_arr = date_string.split('-');
+                
+                var date = new Date(date_arr[0],date_arr[1]-1,date_arr[2]);
+                
+                var days =["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Satruday"];
+            
+                var months = ["January", "February", "March", "April", "May", "June", "July",
+                    "August", "September", "October", "November", "December"];
+                
+                    
+                $('#last-updated').html('Last updated on ' + months[date.getMonth()] + ' ' + date.getUTCDate() + ', ' + date.getFullYear());
+            }
+            
+            function setStatusCounts() {
+                //return [total_open, total_count];
+                
+                var total_open = 0,
+                    total_closed = 0;
+            
+                for (var i = selected_range[0]; i < selected_range[1]; i++) {
+                    total_open = total_open + dc[i]['Open'];
+                    total_closed = total_closed + dc[i]['Closed'];
+                }
+                
+                $("#open-count").html(total_open);
+                $("#closed-count").html(total_closed);   
+            }
+            
+            
+            function sortServiceList() {
+                d3.json('/stats/sr_counts', function(counts) {
+                    sr_counts_by_date = counts; // cache this
+                    
+                    // date_range is already set
+                                        
+                    var groups = [];
+                    
+                    for (var date in date_range) {
+                        //console.log(date);
+                        
+                        for (var group in sr_counts_by_date[date_range[date]]) {
+                            if (groups[group]) {
+                                groups[group] += sr_counts_by_date[date_range[date]][group];
+                            } else {
+                                groups[group] = sr_counts_by_date[date_range[date]][group]
+                            }                        
+                        }    
+                    }
+                    
+                    // fix this: http://wolfram.kriesing.de/blog/index.php/2008/javascript-sort-object-by-a-value
+                    var sortable = [];
+                    
+                    for (var group in groups) {
+                        sortable.push([group,groups[group]]);
+                    }
+                    
+                    sortable.sort(function(a,b) { return b[1] - a[1] });
+                    
+                    //console.log(sortable);
+                    
+                    var type_conversion ={'Sidewalk or Street': 'ss', 'Garbage': 'garbage', 'Defacement / Graffiti': 'graffiti',
+                        'Sewage': 'sewage', 'Vehicles': 'vehicle', 'Water': 'water', 'Trees': 'trees'};
+                    
+                    var types = ['ss','garbage','graffiti','sewage','vehicle','water','trees'];
+                    
+                    var order = [];
+                    for (var i=0; i < sortable.length; i++) {
+                        order.push(type_conversion[sortable[i][0]]);
+                    }
+                    
+                    for (var i=0; i < types.length; i++) {
+                        if (order.indexOf(types[i]) == -1) {
+                            order.push(types[i]);
+                        }
+                    }
+                    
+                    for (var i=order.length-2; i > 0; i--) {
+                        $('#' + order[i]).insertBefore('#' + order[i+1]);
+                    }
+                                        
+                    //return order;
+                });         
+            }
+            
+            var lazyLoad = _.debounce(resetMap, 50);
+            
+            function draw_bar_chart(path) {
+                d3.json(path, function(daily_count) {
+                    dc = daily_count;
+                    
+                    setTitleDate(dc[dc.length-1]['date']);
+                    
+                    selected_range = [dc.length-3, dc.length-1];
+                    
+                    sortServiceList();
+                    setStatusCounts();
+                    
+                    $('#slider').dragslider({
+                        animate: true,
+                        range: true,
+                        rangeDrag: true,
+                        min: 0,
+                        max: dc.length-1,
+                        values: selected_range,
+                        slide: function(e, ui) {
+                            var start = ui['values'][0],
+                                end = ui['values'][1];
+                            
+                            selected_range = [start, end];
+                            
+                            resetBarColors();
+                            
+                            console.log('dc',dc[start]['date'], dc[end]['date']);
+                            
+                            lazyLoad([dc[start]['date'], dc[end]['date']]);
+                            
+                            setStatusCounts();
+                            
+                            sortServiceList();
+                        }
+                    });
+                    
+                    $('.chart').css('display', 'block');
+                    $('#typeList').css('display', 'block');
+                    
+                    //console.log('Daily count length is: ' + daily_count.length);
+                    
+                    var w = 850,
+                        h = 100,
+                        barPadding = 1,
+                        barSeparation = 0;
+                    
+                    var max_open = d3.max(daily_count, function(d) { return d.Open; });
+                    sf_max_open = max_open;
+                    var max_closed = d3.max(daily_count, function(d) { return d.Closed; });
+                    sf_max_closed = max_closed;
+                    
+                    var x = d3.scale.linear().domain([0, dc.length]).range([0, w]);
+                    var x2 = d3.scale.linear().domain([0, dc.length]).range([0, w]);
+                    
+                    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+                                    
+                    chart = d3.select("#open-chart")
                               .append("svg")
                               .attr("class", "chartArea")
                               .attr("width", w)
                               .attr("height", h);
-            
-                  chart.selectAll(".open")
+                    
+                    chart.selectAll(".open")
                       .data(daily_count)
                       .enter()
                       //.append("a") // Add a link
                       //.attr("xlink:href", function(d) { return '/daily/' + d.date})
                       .append("rect")
                       .attr("class", "open")
+                      .attr("fill", function(d, i) { if (i < selected_range[0]) { return "#f2f2f2" } else { return "#cacaca" } } )
                       .attr("x", function(d, i) {
                           //console.log('i', i);
                           return i * (w / daily_count.length);
                       })
-                      .attr("y", .5*h)
+                      .attr("y", .5*h+35)
                       .attr("height", 0)
                       .attr("width", w/daily_count.length - barPadding)
                       .attr("fill-opacity", .0001) // try setting this to zero for strange behavior
@@ -142,10 +646,10 @@ h2 { font-size: 16px; color: #000; margin-bottom: 0; }
                         //.delay(function(d, i) { return i / daily_count.length * 400; })
                         .delay(function(d, i) { return i * daily_count.length; })
                         .attr("fill-opacity", 1)
-                        .attr("y", function(d) { return h - .25*d.Open - .5 * h;})
-                        .attr("height", function(d) { return .25*d.Open; });
-            
-                  chart.selectAll(".open")
+                        .attr("y", function(d) { return h - 75*d.Open/max_open - .5 * h + 35; })
+                        .attr("height", function(d) { return 75*d.Open/max_open; });
+                    
+                    chart.selectAll(".open")
                     .on("mouseover", function(d){
                         d3.select(this).classed("active", true);
                         $("#open-count").html(d.Open);
@@ -153,21 +657,28 @@ h2 { font-size: 16px; color: #000; margin-bottom: 0; }
                       .on("mouseout", function(){
                           d3.select(this).classed("active", false);
                           //$("#count").html("Count");
-            
+                    
                       })
-            
-                  chart.selectAll(".closed")
+                      
+                    chart2 = d3.select("#closed-chart")
+                      .append("svg")
+                      .attr("class", "chartArea")
+                      .attr("width", w)
+                      .attr("height", h);
+                                        
+                    chart2.selectAll(".closed")
                       .data(daily_count)
                       .enter()
                       //.append("a") // Add a link
                       //.attr("xlink:href", function(d) { return '/daily/' + d.date})
                       .append("rect")
                       .attr("class", "closed")
+                      .attr("fill", function(d, i) { if (i < selected_range[0]) { return "#f2f2f2" } else { return "#929292" } } )
                       .attr("x", function(d, i) {
                                   //console.log('i', i);
                                   return i * (w / daily_count.length);
                       })
-                      .attr("y", .5*h)
+                      .attr("y", .5*h - 35)
                       .attr("height", 0)
                       .attr("width", w/daily_count.length - barPadding)
                       .attr("fill-opacity", 0.0001) // try setting this to zero for strange behavior
@@ -175,199 +686,233 @@ h2 { font-size: 16px; color: #000; margin-bottom: 0; }
                         .duration(400)
                         .delay(function(d, i) { return i * daily_count.length; })
                         .attr("fill-opacity", 1)
-                        .attr("y", function(d) { return .5 * h + barPadding;})
-                        .attr("height", function(d) { return .25*d.Closed; });
-                  
-                  chart.selectAll(".closed")
-                  .on("mouseover", function(d){ 
+                        .attr("y", function(d) { return .5 * h + barPadding - 35;})
+                        .attr("height", function(d) { return 75*d.Closed/max_closed; });
+                    
+                    chart2.selectAll(".closed")
+                    .on("mouseover", function(d){ 
                                       d3.select(this).classed("active", true);
                                       $("#closed-count").html(d.Closed);
-                  })
-                  .on("mouseout", function(){
+                    })
+                    .on("mouseout", function(){
                                       d3.select(this).classed("active", false);
-                  });
+                    });              
+                });            
+            }
+            
+            function changeViews() {
+                var bar_path = '/daily_count';
+                var stats_path = '/avg_resp_time';
+                
+                /* Generalize this for other cities */
+                if ($('#neighborhoods').val() != 'San Francisco') {
+                    bar_path = bar_path + '_by_neighborhood?neighborhood=' + $('#neighborhoods').val();
+                    stats_path = stats_path + '?neighborhood=' + $('#neighborhoods').val();
+                }
+                
+                changeNeighborhood();
+                redraw_bar_chart(bar_path);
+                update_statistics(stats_path);
+            }
+                    
+            function changeNeighborhood() {
+                var neighborhood = $('#neighborhoods').val();
+                
+                if (neighborhood !== 'San Francisco') {
+                    var neighborhood_lat = $('#neighborhoods').children(":selected").attr('lat');
+                    var neighborhood_lon = $('#neighborhoods').children(":selected").attr('lon');
+                    map.setView(new L.LatLng(neighborhood_lat, neighborhood_lon), 14);
+                } else {
+                    map.setView(new L.LatLng(37.767, -122.44), 12); // Put this center in a config
+                }
+            }
+            
+            function createLayerGroup(requests) {
+                var layer_group = new L.LayerGroup([]);
+                
+                var marker,
+                    sc;
+                
+                for (var i=0, max=requests.length; i < max; i++) {
+                    try {
+                        sc = new_service_list[requests[i]['service_code']]['group'];
+                    } catch (e) {
+                        //console.log(e);
+                        continue;
+                    }
+                    
+                    if (sc == 'Sidewalk or Street') {
+                        var marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: ssIcon});
+                    } else if (sc == 'Garbage') {
+                        marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: garbIcon});
+                    } else if (sc == 'Defacement / Graffiti') {
+                        marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: grafIcon});
+                    } else if (sc == 'Sewage') {
+                        marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: sewIcon});
+                    } else if (sc == 'Vehicles') {
+                        marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: vehicIcon});
+                    } else if (sc == 'Trees') {
+                        marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: treesIcon});
+                    } else if (sc == 'Water') {
+                        marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: watIcon});
+                    }
+                    
+                    layer_group.addLayer(marker);
+                }
+                
+                return layer_group;
+            }
+                    
+            // Set up neighborhoods dropdown
+            
+            d3.csv("{{url_for('static', filename='js/neighborhood_list.csv')}}", function(neighborhoods) {
+                for (var i = 0, max = neighborhoods.length; i < max; i++) {
+                    $('#neighborhoods')
+                        .append($("<option></option")
+                        .attr("value", neighborhoods[i]['neighborhood'])
+                        .attr("lat", neighborhoods[i]['lat'])
+                        .attr("lon", neighborhoods[i]['lon'])
+                        .text(neighborhoods[i]['neighborhood']));   
+                }
+                
+                $('#neighborhoods').change(changeViews);
             });
-        }
-        
-        function changeViews() {
-            var bar_path = '/daily_count';
-            var stats_path = '/avg_resp_time';
             
-            /* Generalize this for other cities */
-            if ($('#neighborhoods').val() != 'San Francisco') {
-                bar_path = bar_path + '_by_neighborhood?neighborhood=' + $('#neighborhoods').val();
-                stats_path = stats_path + '?neighborhood=' + $('#neighborhoods').val();
-            }
             
-            changeNeighborhood();
-            redraw_bar_chart(bar_path);
-            update_statistics(stats_path);
-        }
-                
-        function changeNeighborhood() {
-            var neighborhood = $('#neighborhoods').val();
+            // Handle statistics
             
-            if (neighborhood !== 'San Francisco') {
-                var neighborhood_lat = $('#neighborhoods').children(":selected").attr('lat');
-                var neighborhood_lon = $('#neighborhoods').children(":selected").attr('lon');
-                map.setView(new L.LatLng(neighborhood_lat, neighborhood_lon), 14);
-            } else {
-                map.setView(new L.LatLng(37.77, -122.41), 12); // Put this center in a config
-            }
-        }
-    
-        // Set today's date
-        var date = new Date();
-        var days =["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Satruday"];
-        var months = ["January", "February", "March", "April", "May", "June", "July",
-            "August", "September", "October", "November", "December"];
+            // Average Response Time
+            d3.json('/avg_resp_time', function(data) {
+                $('#response-time').html(Math.round(data[0]['avg_response_time']) + ' Hours');
+            });
             
-                
-        $('#current-date').html(months[date.getMonth()] + ' ' + date.getUTCDate() + ', ' + date.getFullYear());
-    
-        // Set up neighborhoods dropdown
-        
-        d3.csv("{{url_for('static', filename='js/neighborhood_list.csv')}}", function(neighborhoods) {
-            //console.log(neighborhoods);
-            
-            for (var i = 0, max = neighborhoods.length; i < max; i++) {
-                $('#neighborhoods')
-                    .append($("<option></option")
-                    .attr("value", neighborhoods[i]['neighborhood'])
-                    .attr("lat", neighborhoods[i]['lat'])
-                    .attr("lon", neighborhoods[i]['lon'])
-                    .text(neighborhoods[i]['neighborhood']));   
-            }
-            
-            $('#neighborhoods').change(changeViews);
-        });
-        
-        
-        // Handle statistics
-        
-            // Avg Response Time
-        
-        d3.json('/avg_resp_time', function(data) {
-            $('#response-time').html(Math.round(data[0]['avg_response_time']) + ' Hours');
-        });
-        
-        // Set up the graph
-        
-        draw_bar_chart('/daily_count');
-                
-        // Set up the map
-        
-        d3.json('/requests/latest?days=60', function(requests) {
-            //console.log(requests);
-            
-            var data = d3.nest()
-                .key(function(d) { return d.requested_date; })
-                .map(requests);
-            
-            console.log(data);
-            
+            // Set up the bar chart
+            //draw_bar_chart('/daily_count');
+                    
             // Set up the map
-        
-            map = new L.Map('map');
-            
-            toner = new L.TileLayer('http://tile.stamen.com/toner-lite/{z}/{x}/{y}.png', {maxZoom: 18});
-            
-            map.setView(new L.LatLng(37.77, -122.41), 12).addLayer(toner);
-            
-            var defaultStyle = {
-                color: "#333",
-                weight: 3,
-                opacity: .6,
-                fillOpacity: 0,
-                fillColor: "#000"
-            };
-            
-            var markerStyle = {
-                radius: 3,
-                color: "#FF0000",
-                fillColor: "#FF0000",
-                weight: 1,
-                opacity: 1,
-                fillOpacity: .5
-            };    
-            
-            for (var i=0, max = requests.length; i < max; i++) {
-                var marker = new L.CircleMarker(new L.LatLng(requests[i].lat, requests[i].lon), markerStyle);
-                map.addLayer(marker);
-            
-                //$('#requests').append('<tr><td>' + results[i].service_name + '</td><td>' + results[i].status + '</td><td>' + results[i].date + '</td><td>' + results[i].expected_datetime + '</td><td>' + results[i].updated_datetime + '</td><td>' + results[i].lat + ', ' + results[i].lon + '</td></tr>')
-            
-                marker.bindPopup('Request Type: ' + requests[i].service_name);
-            }
+            d3.csv('/requests/latest', function(requests) {
+                var initial_date_range = [];
+                      
+                // Set up the map
+                map = new L.Map('map', {minZoom: 10, maxZoom: 18, scrollWheelZoom: false});
+                
+                map.setView(new L.LatLng(37.767, -122.44), 12)
+                    .addLayer(new L.TileLayer('http://tile.stamen.com/toner-lite/{z}/{x}/{y}.png'));
+                
+                // Handle the data
+                map_requests = requests; // Remove?
+                
+                requests_by_date = d3.nest()
+                    .key(function(d) { return d.requested_date; })
+                    .map(requests);
+                
+                for (var date in requests_by_date) { // Remove?
+                    initial_date_range.push(date);
+                }
+                
+                initial_date_range.sort(d3.ascending); // Default means we don't need d3.ascending
+                
+                draw_bar_chart('/daily_count');
+                
+                // Get 21 days
+                for (date in requests_by_date) {
+                    var layer_group_by_date = createLayerGroup(requests_by_date[date]);
+                    
+                    layer_groups_by_date[date] = layer_group_by_date;
+                }
+                
+                // Initially show 3 days
+                for (var i=initial_date_range.length-3; i < initial_date_range.length; i++) {
+                    date_range.push(initial_date_range[i]);
+                    map.addLayer(layer_groups_by_date[initial_date_range[i]]);
+                }        
+            });
         });
-    });
-</script>
-</head>
-
-<body>
-<div class="dashboardCase">
-    <div class="searchBox">
-        <form>
-            <input type="text" placeholder="location or ticket #" />
-            <button>Search</button>
-        </form>
-    </div>
-    <h1> <span class="cityName">San Francisco</span> 311 Dashboard </h1>
-    <h2 id="current-date">Date</h2>
-    <div class="report">
-        <div>
-            <h3>Neighborhood</h3>
+    </script>
+    </head>
+    
+    <body>
+    <div class="dashboardCase">
+        <div class="searchBox">
             <form>
-                <select name="neighborhoods" id="neighborhoods">
-                    <option>San Francisco</option>
-                </select>
+                <input type="text" placeholder="location or ticket #" />
+                <button>Search</button>
             </form>
         </div>
-        <div>
-            <h3>Most Requests Today</h3>
-            Sidewalk Cleaning 
+        <h1> <span class="cityName">San Francisco</span> 311 Dashboard </h1>
+        <h2 id="last-updated">&nbsp</h2>
+        <div class="report">
+            <div>
+                <h3>Neighborhood</h3>
+                <form>
+                    <select name="neighborhoods" id="neighborhoods">
+                        <option>San Francisco</option>
+                    </select>
+                </form>
+            </div>
+            <div>
+                <h3>Most Requests Today</h3>
+                Sidewalk Cleaning 
+            </div>
+            <div>
+                <!--
+                <h3>Stale Requests in 2012</h3>
+                <span id="stale">30</span> 
+                -->
+                <h3>Least Requests Today</h3>
+                Graffiti 
+            </div>
+            <div>
+                <h3>Median Response Time</h3>
+                <span id='response-time'>&nbsp;</span> 
+            </div>
         </div>
-        <div>
-            <h3>Number of Stale Requests</h3>
-            <span id="stale">30</span> 
+        <div class="chart" style="display: none;">
+            <div id="open-chart"></div>
+            <div id="slider" style="position: relative; left: 9px; width: 850px"></div>
+            <div id="closed-chart"></div>
+            <div style="float:right; position: relative; top: -177px;">
+                <div style="position:relative; top: 0px">
+                    <span id="open-count" class="requestCount">&nbsp;</span><br /> Open
+                </div>
+                <div style="position:relative; top: 42px">
+                    <span id="closed-count" class="requestCount">#</span><br /> Closed
+                </div>
+            </div>
         </div>
-        <div>
-            <h3>Average Response Time</h3>
-            <span id='response-time'>&nbsp;</span> 
+        <div id="map_container" style="width: 960px; height: 520px;">
+            <div id="map"></div>
+            <div id="typeList" style="display: none; width: 200px; height: 260px; padding: 20px; top: 50px; left: 700px; background: rgba(255,255,255,.8); position: relative; z-index: 2;">
+                    <span id="ss" class="type">
+                        <span class="sr_image ss_selected">&nbsp</span>
+                        <span id="ss_text" class="sr_text">Sidewalk or Street</span>
+                    </span>
+                    <span id="graffiti" class="type">
+                        <span class="sr_image graffiti_selected">&nbsp</span>
+                        <span id="graffiti_text" class="sr_text">Defacement/Graffiti</span>
+                    </span>
+                    <span id="sewage" class="type">
+                        <span class="sr_image sewage_selected">&nbsp</span>
+                        <span id="sewage_text" class="sr_text">Sewage</span>
+                    </span>
+                    <span id="water" class="type">
+                        <span class="sr_image water_selected">&nbsp</span>
+                        <span id="water_text" class="sr_text">Water</span>
+                    </span>
+                    <span id="vehicle" class="type">
+                        <span class="sr_image vehicle_selected">&nbsp</span>
+                        <span id="vehicle_text" class="sr_text">Vehicles</span>
+                    </span>
+                    <span id="trees" class="type">
+                        <span class="sr_image trees_selected">&nbsp</span>
+                        <span id="trees_text" class="sr_text">Trees</span>
+                    </span>
+                    <span id="garbage" class="type">
+                        <span class="sr_image garbage_selected">&nbsp</span>
+                        <span id="garbage_text" class="sr_text">Garbage</span>
+                    </span>
+            </div>
         </div>
     </div>
-    <div class="chart">
-        <div style="float:right">
-            <div style="position:relative; top: 50px">
-                <span id="open-count" class="requestCount">#</span><br /> Open
-			</div>
-			<div style="position:relative; top: 60px">
-                <span id="closed-count" class="requestCount">#</span><br /> Closed
-			</div>
-        </div>
-        <div id="chart" class="chartArea"></div>
-    </div>
-    <div id="map">
-        <!--
-        <div class="typeList">
-        	<ol>
-            	<li><a href="#">Sidewalk Cleaning</a></li>            	
-            	<li><a href="#">Illegal Dumping</a></li>            	
-            	<li><a href="#">Litter Receptacles</a></li>            	
-            	<li><a href="#">Overflowing Dumpsters</a></li>            	
-            	<li><a href="#">Sewer Issues</a></li>            	
-            	<li><a href="#">Sidewalk Defect</a></li>            	
-            	<li><a href="#">Sidewalk or Curb</a></li>            	
-            	<li><a href="#">Street Cleaning</a></li>            	
-            	<li><a href="#">Street Defects</a></li>            	
-            	<li><a href="#">Street & Sidewalk Cleaning</a></li>            	
-            	<li><a href="#">Street or Sidewalk</a></li>            	
-            	<li><a href="#">Tree Maintenance</a></li>            	
-            	<li><a href="#">Graffiti</a></li>            	
-            </ol>
-        </div>
-        -->
-    </div>
-</div>
-</body>
+    </body>
 </html>
