@@ -30,9 +30,14 @@
         position: absolute;
         margin-top: 20px; 
     }
+
+    .ui-slider {
+        cursor: pointer;
+    }
     
     .ui-slider .ui-slider-handle {
         width: .6em;
+        cursor: pointer;
     }
     
     .typeList { float: right; background-color: #FFF; margin: 20px; padding: 10px; }
@@ -61,16 +66,19 @@
     
     .type {
         display: block;
-        padding: 5px;
-        margin-top: 8px;
-        /*background: #CCC;*/
+        padding: 8px;
+        margin: 5px;
+        background: #FFF;
         cursor: pointer;
         /*font-weight: 500;*/
     }
     
     
     .type_selected {
-        background: #FFF;
+        color: #000;
+        /*text-decoration: underline;
+        color: #0099cc;*/
+        /*background: #FFF;*/
     }
     
     .type_deselected {
@@ -79,6 +87,17 @@
     }
     
     .sr_text {
+        /*text-decoration: underline;*/
+        /*color: #0099cc;*/
+        color: #000;
+    }
+    
+    .sr_text_over {
+        text-decoration: underline;
+        color: #0099cc;
+    }
+    
+    .sr_text_over_deselected {
         text-decoration: underline;
         color: #0099cc;
     }
@@ -148,11 +167,20 @@
         .vehicle_off {
             background: url('{{url_for('static', filename='images/marker_images/vehicle_off.png') }}') no-repeat;
         }
+        
+    .ss_icon {
+        z-index: 99999;
+    }
     
     }
     </style>
     <link rel="stylesheet" href="http://leaflet.cloudmade.com/dist/leaflet.css" />
     <!--[if lte IE 8]><link rel="stylesheet" href="http://leaflet.cloudmade.com/dist/leaflet.ie.css" /><![endif]-->
+    
+    <link rel="stylesheet" href="{{url_for('static', filename='css/MarkerCluster.Default.ie.css') }}" />
+    <link rel="stylesheet" href="{{url_for('static', filename='css/MarkerCluster.Default.css') }}" />
+    
+    <link rel="stylesheet" href="{{url_for('static', filename='css/MarkerCluster.css') }}" />
     
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.21/jquery-ui.min.js"></script>
@@ -164,35 +192,10 @@
     <!--<script type=text/javascript src="{{url_for('static', filename='js/leaflet.js') }}"></script>-->
     <script src="http://leaflet.cloudmade.com/dist/leaflet.js"></script>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.3.3/underscore-min.js"></script>
-    <script type="text/javascript">
-        /*
-         $(function() {
-            $('#go').click(function() {
     
-            var order = $('#order').val() == ""? null: $('#order').val().split(",");
-            $('#container').reOrder(order, 'someid');
-            });
-        });
+    <script type=text/javascript src="{{url_for('static', filename='js/leaflet.markercluster.js') }}"></script>
     
-        (function($) {
-            $.fn.reOrder = function(array, prefix) {
-              return this.each(function() {
-                prefix = prefix || "";
-            
-                if (array) {    
-                  for(var i=0; i < array.length; i++) 
-                    array[i] = $('#' + prefix + array[i]);
-            
-                  $(this).empty();  
-            
-                  for(var i=0; i < array.length; i++)
-                    $(this).append(array[i]);      
-                }
-              });    
-            }
-        })(jQuery);
-        */
-    
+    <script type="text/javascript">    
         var graf = "{{url_for('static', filename='images/marker_images/graffiti.png') }}";
         var garb = "{{url_for('static', filename='images/marker_images/garbage.png') }}";
         var sew = "{{url_for('static', filename='images/marker_images/sewage.png') }}";
@@ -248,49 +251,81 @@
             var sr_counts_by_date;
                                 
             // Handle Service Request Selection
-            $('#ss').click(function() {
+            $('#ss').click(function() {                
                 handleSRDisplay('ss');
-            })
-            
-            /*
-            .mouseenter(function() {
-                //console.log('mouse enter');
-                
-                if (!markers_switch['Sidewalk or Street']) {
-                    $(this).addClass('type_selected');
-                }
-            }).mouseleave(function() {
-                //console.log('mouse leave');
-                
-                if (!markers_switch['Sidewalk or Street']) {
-                    $(this).removeClass('type_selected');
-                }
+            }).mouseenter(function() {                
+                enterKeyType('ss');
+            }).mouseleave(function() {                
+                leaveKeyType('ss');
             });
-            */
             
             $('#graffiti').click(function() {
                 handleSRDisplay('graffiti');
+            }).mouseenter(function() {                
+                enterKeyType('graffiti');
+            }).mouseleave(function() {                
+                leaveKeyType('graffiti');
             });
             
             $('#sewage').click(function() {
                 handleSRDisplay('sewage');
+            }).mouseenter(function() {                
+                enterKeyType('sewage');
+            }).mouseleave(function() {                
+                leaveKeyType('sewage');
             });
             
             $('#water').click(function() {
                 handleSRDisplay('water');
+            }).mouseenter(function() {                
+                enterKeyType('water');
+            }).mouseleave(function() {                
+                leaveKeyType('water');
             });
             
             $('#vehicle').click(function() {
                 handleSRDisplay('vehicle');
+            }).mouseenter(function() {                
+                enterKeyType('vehicle');
+            }).mouseleave(function() {                
+                leaveKeyType('vehicle');
             });
             
             $('#trees').click(function() {
                 handleSRDisplay('trees');
+            }).mouseenter(function() {                
+                enterKeyType('trees');
+            }).mouseleave(function() {                
+                leaveKeyType('trees');
             });
             
             $('#garbage').click(function() {
                 handleSRDisplay('garbage');
+            }).mouseenter(function() {                
+                enterKeyType('garbage');
+            }).mouseleave(function() {                
+                leaveKeyType('garbage');
             });
+            
+            function enterKeyType(type) {
+                $('#' + type + '_text').removeClass('sr_text');
+                $('#' + type + '_text').addClass('sr_text_over');
+                
+                if ($('#' + type + '_text').hasClass('sr_text_deselected')) {
+                    $('#' + type + '_text').removeClass('sr_text_deselected');
+                    $('#' + type + '_text').addClass('sr_text_over_deselected');
+                }
+            }
+            
+            function leaveKeyType(type) {
+                $('#' + type + '_text').addClass('sr_text');
+                $('#' + type + '_text').removeClass('sr_text_over');
+                
+                if ($('#' + type + '_text').hasClass('sr_text_over_deselected')) {
+                    $('#' + type + '_text').removeClass('sr_text_over_deselected');
+                    $('#' + type + '_text').addClass('sr_text_deselected');
+                } 
+            }
             
             function handleSRDisplay(type) {            
                 var shortened_types = {'ss': 'Sidewalk or Street', 'garbage': 'Garbage', 'graffiti': 'Defacement / Graffiti', 'sewage': 'Sewage',
@@ -298,14 +333,21 @@
                                     
                 var all_types = ['ss','garbage','graffiti','sewage','trees','vehicle','water'];
                 
+                // Handle the text on click
+                if ($('#' + type + '_text').hasClass('sr_text_over_deselected')) {
+                    $('#' + type + '_text').removeClass('sr_text_over_deselected');
+                    $('#' + type + '_text').addClass('sr_text');
+                } else {
+                    $('#' + type + '_text').removeClass('sr_text_over');
+                }
+                
+                // Handle the icons
+                
                 markers_switch[shortened_types[type]] = !markers_switch[shortened_types[type]];
                 
                 for (var i=0, max=all_types.length; i < max; i++) {
                     if (!markers_switch[shortened_types[all_types[i]]]) {
-                        //console.log(i);
                         $('.' + all_types[i] + '_icon').css('display', 'none');
-                        
-                        //$('#' + type_conversion[all_types[i]]).toggleClass('type_deselected');
                         
                         $('#' + all_types[i] + '_text').addClass('sr_text_deselected');
                         
@@ -729,6 +771,8 @@
             
             function createLayerGroup(requests) {
                 var layer_group = new L.LayerGroup([]);
+                //var layer_group = new L.MarkerClusterGroup(); // ***
+                
                 
                 var marker,
                     sc;
@@ -756,6 +800,10 @@
                     } else if (sc == 'Water') {
                         marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: watIcon});
                     }
+                                        
+                    marker.bindPopup('<b>' + requests[i].requested_date + '</b><br/><br/><b>Category: </b>' + sc + '<br/><br/><b>Status</b>: ' + requests[i].status);
+                    
+                    //console.log('requests of i', requests[i]);
                     
                     layer_group.addLayer(marker);
                 }
@@ -785,10 +833,7 @@
             d3.json('/avg_resp_time', function(data) {
                 $('#response-time').html(Math.round(data[0]['avg_response_time']) + ' Hours');
             });
-            
-            // Set up the bar chart
-            //draw_bar_chart('/daily_count');
-                    
+                                
             // Set up the map
             d3.csv('/requests/latest', function(requests) {
                 var initial_date_range = [];
@@ -882,7 +927,7 @@
         </div>
         <div id="map_container" style="width: 960px; height: 520px;">
             <div id="map"></div>
-            <div id="typeList" style="display: none; width: 200px; height: 260px; padding: 20px; top: 50px; left: 700px; background: rgba(255,255,255,.8); position: relative; z-index: 2;">
+            <div id="typeList" style="display: none; width: 200px; height: auto; padding: 5px; top: 50px; left: 700px; background: rgba(255,255,255,.8); position: relative; z-index: 2;">
                     <span id="ss" class="type">
                         <span class="sr_image ss_selected">&nbsp</span>
                         <span id="ss_text" class="sr_text">Sidewalk or Street</span>
