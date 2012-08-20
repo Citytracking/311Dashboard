@@ -293,6 +293,12 @@
             
             // New
             
+            var markers_by_dt = {}; // Markers by date and type
+            var cluster_groups;
+            var previous_cluster_group_date_range = []; 
+            
+            var displayByDate = true;
+            
             var layer_groups_by_date = {};
             
             var markers_by_type = {'Sidewalk or Street': {}, 'Garbage': {}, 'Defacement / Graffiti': {},
@@ -673,6 +679,35 @@
                         min: 0,
                         max: dc.length-1,
                         values: selected_range,
+                        start: function(e, ui) {
+                            if (!displayByDate) {
+                                for (var group in cluster_groups) {
+                                    map.removeLayer(cluster_groups[group]);
+                                }
+                                
+                                for (var i=0; i < date_range.length; i++) {
+                                    //date_range.push(initial_date_range[i]);
+                                    map.addLayer(layer_groups_by_date[date_range[i]]);
+                                }
+                                
+                                displayByDate = true;
+                            }
+                        },
+                        stop: function(e, ui) {
+                            if (displayByDate) {
+                                for (var i=0; i < date_range.length; i++) {
+                                    map.removeLayer(layer_groups_by_date[date_range[i]]);
+                                }
+                                
+                                updateClusterGroups();
+                                
+                                for (var group in cluster_groups) {
+                                    map.addLayer(cluster_groups[group]);
+                                }
+                                
+                                displayByDate = false;
+                            }
+                        },
                         slide: function(e, ui) {
                             var start = ui['values'][0],
                                 end = ui['values'][1];
@@ -791,7 +826,7 @@
                     });              
                 });            
             }
-            
+                        
             function changeViews() {
                 var bar_path = '/daily_count';
                 var stats_path = '/avg_resp_time';
@@ -818,8 +853,102 @@
                     map.setView(new L.LatLng(37.767, -122.44), 12); // Put this center in a config
                 }
             }
+                        
+            function updateClusterGroups() {
+                console.log('dr pcgdr', date_range, previous_cluster_group_date_range);
+                //var previous_cluster_group_date_range = []; 
+                for (var i=0, max=previous_cluster_group_date_range.length; i < max; i++) {
+                    if (date_range.indexOf(previous_cluster_group_date_range[i]) == -1) {
+                        //map.removeLayer(layer_groups_by_date[date_range[i]]);
+                        removeDateFromDisplay(previous_cluster_group_date_range[i]);
+                    }
+                }
+                
+                for (var i=0, max=date_range.length; i < max; i++) {
+                    if (previous_cluster_group_date_range.indexOf(date_range[i]) == -1) {
+                        //map.addLayer(layer_groups_by_date[new_date_range[i]]);
+                        addDateToDisplay(date_range[i]);
+                    }
+                }
+                
+                previous_cluster_group_date_range = date_range;
+            }
             
-            function createLayerGroup(requests) {
+            
+            function removeDateFromDisplay(date) {
+                var marker_arrays = markers_by_dt[date];
+                
+                for (type in marker_arrays) {
+                    for (var i=0; i < marker_arrays[type].length; i++) {
+                        cluster_groups[type].removeLayer(marker_arrays[type][i]);
+                    }
+                }
+            }
+            
+            function addDateToDisplay(date) {
+                var marker_arrays = markers_by_dt[date];
+                
+                for (type in marker_arrays) {
+                    for (var i=0; i < marker_arrays[type].length; i++) {
+                        cluster_groups[type].addLayer(marker_arrays[type][i]);
+                    }
+                }
+            }
+            
+            function createClusterGroups() {
+                var ss_cluster = new L.MarkerClusterGroup({
+                    iconCreateFunction: function(count) {
+                        return new L.DivIcon({ html: '<div class="m-cluster ss-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
+                    }
+                });
+                
+                var garb_cluster = new L.MarkerClusterGroup({
+                    iconCreateFunction: function(count) {
+                        //return new L.DivIcon({ html: count, className: 'mycluster2', iconSize: new L.Point(40, 40) });
+                        return new L.DivIcon({ html: '<div class="m-cluster garb-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
+                    }
+                });
+                
+                var graf_cluster = new L.MarkerClusterGroup({
+                    iconCreateFunction: function(count) {
+                        //return new L.DivIcon({ html: count, className: 'mycluster3', iconSize: new L.Point(40, 40) });
+                        return new L.DivIcon({ html: '<div class="m-cluster graf-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
+                    }
+                });
+                
+                var sew_cluster = new L.MarkerClusterGroup({
+                    iconCreateFunction: function(count) {
+                        //return new L.DivIcon({ html: count, className: 'mycluster4', iconSize: new L.Point(40, 40) });
+                        return new L.DivIcon({ html: '<div class="m-cluster sew-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
+                    }
+                });
+                
+                var vehic_cluster = new L.MarkerClusterGroup({
+                    iconCreateFunction: function(count) {
+                        //return new L.DivIcon({ html: count, className: 'mycluster5', iconSize: new L.Point(40, 40) });
+                        return new L.DivIcon({ html: '<div class="m-cluster vehic-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
+                    }
+                });
+                
+                var trees_cluster = new L.MarkerClusterGroup({
+                    iconCreateFunction: function(count) {
+                        //return new L.DivIcon({ html: count, className: 'mycluster6', iconSize: new L.Point(40, 40) });
+                        return new L.DivIcon({ html: '<div class="m-cluster trees-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
+                    }
+                });
+                
+                var water_cluster = new L.MarkerClusterGroup({
+                    iconCreateFunction: function(count) {
+                        //return new L.DivIcon({ html: count, className: 'mycluster7', iconSize: new L.Point(40, 40) });
+                        return new L.DivIcon({ html: '<div class="m-cluster water-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
+                    }
+                });
+                
+                cluster_groups = {'ss': ss_cluster,'garb': garb_cluster,'graf':graf_cluster,
+                    'sew':sew_cluster,'vehic':vehic_cluster,'trees':trees_cluster,'water':water_cluster};
+            }
+            
+            function createLayerGroup(date,requests) {
                 var layer_group = new L.LayerGroup([]);
                 
                 var ss_cluster = new L.MarkerClusterGroup({
@@ -872,6 +1001,14 @@
                 
                 var marker,
                     sc;
+                    
+                var ss = [];
+                var garb = [];
+                var graf = [];
+                var sew = [];
+                var vehic = [];
+                var trees = [];
+                var water = [];
                 
                 for (var i=0, max=requests.length; i < max; i++) {
                     try {
@@ -884,24 +1021,31 @@
                     if (sc == 'Sidewalk or Street') {
                         marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: ssIcon});
                         ss_cluster.addLayer(marker);
+                        ss.push(marker);
                     } else if (sc == 'Garbage') {
                         marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: garbIcon});
                         garb_cluster.addLayer(marker);
+                        garb.push(marker);
                     } else if (sc == 'Defacement / Graffiti') {
                         marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: grafIcon});
                         graf_cluster.addLayer(marker);
+                        graf.push(marker);
                     } else if (sc == 'Sewage') {
                         marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: sewIcon});
                         sew_cluster.addLayer(marker);
+                        sew.push(marker);
                     } else if (sc == 'Vehicles') {
                         marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: vehicIcon});
                         vehic_cluster.addLayer(marker);
+                        vehic.push(marker);
                     } else if (sc == 'Trees') {
                         marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: treesIcon});
                         trees_cluster.addLayer(marker);
+                        trees.push(marker);
                     } else if (sc == 'Water') {
                         marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: watIcon});
                         water_cluster.addLayer(marker);
+                        water.push(marker);
                     }
                                         
                     marker.bindPopup('<b>' + requests[i].requested_date + '</b><br/><br/><b>Category: </b>' + sc + '<br/><br/><b>Status</b>: ' + requests[i].status);
@@ -910,6 +1054,9 @@
                     
                     //layer_group.addLayer(marker);
                 }
+                
+                markers_by_dt[date] = {'ss':ss,'garb': garb,'graf':graf,'sew':sew,
+                    'vehic':vehic,'trees':trees,'water':water};
                 
                 layer_group.addLayer(ss_cluster);
                 layer_group.addLayer(garb_cluster);
@@ -970,9 +1117,11 @@
                 
                 draw_bar_chart('/daily_count');
                 
+                createClusterGroups();
+                
                 // Get 21 days
                 for (date in requests_by_date) {
-                    var layer_group_by_date = createLayerGroup(requests_by_date[date]);
+                    var layer_group_by_date = createLayerGroup(date,requests_by_date[date]);
                     
                     layer_groups_by_date[date] = layer_group_by_date;
                 }
@@ -981,7 +1130,7 @@
                 for (var i=initial_date_range.length-3; i < initial_date_range.length; i++) {
                     date_range.push(initial_date_range[i]);
                     map.addLayer(layer_groups_by_date[initial_date_range[i]]);
-                }        
+                }
             });
         });
     </script>
