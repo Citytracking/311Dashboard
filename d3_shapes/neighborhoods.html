@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<head>
+<title>Neighborhoods</title>
+<style>
+
+path {
+  fill: #FFF;
+  stroke: #FFF;
+  cursor: pointer;
+  stroke-width: 2px;
+}
+
+.black {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 3px;
+}
+
+#map {
+  width: 960px;
+  height: 600px;
+}
+
+.neighborhood_title {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sansserif;
+    stroke: #FFF;
+    font-size: 11px;
+}
+
+</style>
+<script src="http://d3js.org/d3.v2.js?2.9.1"></script>
+<script>
+var counts;
+
+var color = d3.scale.linear()
+    .domain([1, 32])
+    .range(["#C8E8C7", "#499E8D"]);
+
+d3.json("counts.json", function(data) {    
+    for (var i in data) {
+        counts = data[i];
+        break;
+    }
+});
+
+d3.json("planning_neighborhoods.json", function(json) {
+    var minLat = json.features[0]['geometry']['coordinates'][0][0][1],
+        minLon = json.features[0]['geometry']['coordinates'][0][0][0],
+        maxLat = json.features[0]['geometry']['coordinates'][0][0][1],
+        maxLon = json.features[0]['geometry']['coordinates'][0][0][0];
+        
+    for (var i=0; i < json.features.length; i++) {
+        for (var j=0; j < json.features[i]['geometry']['coordinates'][0].length; j++) {
+            var lon = json.features[i]['geometry']['coordinates'][0][j][0];
+            var lat = json.features[i]['geometry']['coordinates'][0][j][1];
+            
+            if (minLon > lon) {
+                minLon = lon;
+            } else if (lon > maxLon) {
+                maxLon = lon;
+            }
+            
+            if (minLat > lat) {
+                minLat = lat; 
+            } else if (lat > maxLat) {
+                maxLat = lat;
+            }
+        }
+    }
+
+    var center_lat = .5*(minLat+maxLat);
+    var center_lon = .5*(minLon+maxLon);
+    
+    var proj = d3.geo.mercator().translate([.7*544600,.7*181870]).scale(.7*1600000);
+
+    var svg = d3.select("#map").append("svg")
+        .attr("width", 960)
+        .attr("height", 600);
+    
+    var path = d3.geo.path().projection(proj);
+    
+    var center = proj([center_lon, center_lat]);
+    
+    svg.selectAll("path")
+            .data(json.features)
+        .enter().append("path")
+        .on("mouseover", function(d) { console.log("over", d['properties']['neighborho']); d3.select(this).style("stroke", "#CCC") })
+        .on("mouseout", function() { d3.select(this).style("stroke", "white" )})
+        .attr("d", path)
+        .attr("transform", function(d) {
+            var centroid = path.centroid(d),
+                x = centroid[0],
+                y = centroid[1];
+                        
+            var x_distance = Math.abs(center[0] - x);
+            
+            var y_distance = Math.abs(center[1] - y);
+            
+            // TBD            
+            var x_factor = 1;            
+            var y_factor = 1;
+            
+            return "translate(" + x*x_factor + "," + y*y_factor + ")"
+                + "scale(.75)"
+                + "translate(" + -x + "," + -y + ")";
+        })
+        .style("fill", function(d) {
+            return color(counts[d['properties']['neighborho']]); 
+        });
+    
+    svg.selectAll("text")
+        .data(json.features)
+        .enter()
+        .append("text")
+        .attr("class", "neighborhood_title")
+        .attr("x", function(d) { 
+                var centroid = path.centroid(d),
+                    x = centroid[0];
+                
+                return x;
+        })
+        .attr("y", function(d) {
+            var centroid = path.centroid(d),
+                y = centroid[1];
+                
+                return y;
+        })
+        .attr("text-anchor", "middle")
+        .text(function(d) {
+            return counts[d['properties']['neighborho']];
+        });
+});
+
+</script>
+</head>
+
+<body>
+<div id="map"></div>
+</body>
+</html>
