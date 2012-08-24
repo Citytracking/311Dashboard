@@ -24,11 +24,21 @@
     .chart li { list-style: none; margin-bottom: 20px;  color: #999; font-size: 14px; }
     .chart .requestCount { font-weight: bold; color: #333; font-size: 1.5em; }
     
-    #map {
+    #neighborhood-map {
         width: 960px; 
         height: 520px;
         position: absolute;
         margin-top: 20px; 
+    }
+    
+    .neighborhood {
+        cursor: pointer;
+    }
+    
+    .neighborhood_title {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sansserif;
+        stroke: #FFF;
+        font-size: 11px;
     }
 
     .ui-slider {
@@ -47,15 +57,7 @@
       margin: 0px 0px 0px 10px;
       cursor: pointer;
     }
-    
-    .open {
-      /*fill: #cacaca;*/
-    }
-    
-    .closed {
-      /*fill: #929292;*/
-    }
-    
+        
     .active {
       fill: #333;
     }
@@ -70,25 +72,18 @@
         margin: 5px;
         background: #FFF;
         cursor: pointer;
-        /*font-weight: 500;*/
     }
     
     
     .type_selected {
         color: #000;
-        /*text-decoration: underline;
-        color: #0099cc;*/
-        /*background: #FFF;*/
     }
     
     .type_deselected {
         color: #CCC;
-        /*font-weight: normal;*/
     }
     
     .sr_text {
-        /*text-decoration: underline;*/
-        /*color: #0099cc;*/
         color: #000;
     }
     
@@ -166,85 +161,16 @@
         
         .vehicle_off {
             background: url('{{url_for('static', filename='images/marker_images/vehicle_off.png') }}') no-repeat;
-        }
-        
-    .ss_icon {
-        z-index: 99999;
-    }
-    
-    .m-cluster {
-        border-bottom-left-radius: 21px;
-        border-bottom-right-radius: 21px;
-        border-top-left-radius: 21px;
-        border-top-right-radius: 21px;
-        cursor: pointer;
-        display: block;
-        font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
-        font-size: 13px;
-        font-weight: bold;
-        width: 40px;
-        height: 40px;
-        margin-left: 5px;
-        margin-top: 5px;
-        line-height: normal;
-        text-align: center;
-        border-radius: 21px;
-        color: #050505;
-        border: 2px solid #FFF;
-    }
-    
-    .ss-cluster {
-        background-color: rgba(115, 157, 250, .6);
-    }
-    
-    .garb-cluster {
-        background-color: rgba(214, 206, 2, .6);
-    }
-    
-    .graf-cluster {
-        background-color: rgba(254, 84, 0, .6);
-    }
-    
-    .sew-cluster {
-        background-color: rgba(158, 123, 66, .6);
-    }
-    
-    .vehic-cluster {
-        background-color: rgba(250, 154, 126, .6);
-    }
-    
-    .trees-cluster {
-        background-color: rgba(153, 200, 96, .6);
-    }
-    
-    .water-cluster {
-        background-color: rgba(0, 223, 255, .6);
-    }
-        
+        }        
     }
     </style>
-    <link rel="stylesheet" href="http://leaflet.cloudmade.com/dist/leaflet.css" />
-    <!--[if lte IE 8]><link rel="stylesheet" href="http://leaflet.cloudmade.com/dist/leaflet.ie.css" /><![endif]-->
-    
-    <!--
-    <link rel="stylesheet" href="{{url_for('static', filename='css/MarkerCluster.Default.ie.css') }}" />
-    <link rel="stylesheet" href="{{url_for('static', filename='css/MarkerCluster.Default.css') }}" />
-    -->
-    <link rel="stylesheet" href="{{url_for('static', filename='css/MarkerCluster.css') }}" />
-    
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.21/jquery-ui.min.js"></script>
     <script type=text/javascript src="{{url_for('static', filename='js/drag_range.js') }}"></script>
     
     <script src="http://d3js.org/d3.v2.min.js"></script>
     <script type=text/javascript src="{{url_for('static', filename='new_service_list.js') }}"></script>
-    <script type=text/javascript src="{{url_for('static', filename='js/neighborhood_list.js') }}"></script>
-    <!--<script type=text/javascript src="{{url_for('static', filename='js/leaflet.js') }}"></script>-->
-    <script src="http://leaflet.cloudmade.com/dist/leaflet.js"></script>
-    <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.3.3/underscore-min.js"></script>
-    
-    <script type=text/javascript src="{{url_for('static', filename='js/leaflet.markercluster-src.js') }}"></script>
-    
+    <script type=text/javascript src="{{url_for('static', filename='js/neighborhood_list.js') }}"></script>   
     <script type="text/javascript">    
         var graf = "{{url_for('static', filename='images/marker_images/graffiti.png') }}";
         var garb = "{{url_for('static', filename='images/marker_images/garbage.png') }}";
@@ -261,25 +187,57 @@
         var trees_off = "{{url_for('static', filename='images/marker_images/trees_off.png') }}";
         var vehic_off = "{{url_for('static', filename='images/marker_images/vehicle_off.png') }}";
         var wat_off = "{{url_for('static', filename='images/marker_images/water_off.png') }}";
-        
-        var mIcon = L.Icon.extend({ options: { iconSize: [15,15] } });
-        //var mIcon = L.divIcon({className: class});
-        
-        var grafIcon = new mIcon({iconUrl: graf, className: 'graffiti_icon'});
-        var garbIcon = new mIcon({iconUrl: garb, className: 'garbage_icon'});
-        var sewIcon = new mIcon({iconUrl: sew, className: 'sewage_icon'});
-        var ssIcon = new mIcon({iconUrl: ss, className: 'ss_icon'});
-        var treesIcon = new mIcon({iconUrl: trees, className: 'trees_icon'});
-        var vehicIcon = new mIcon({iconUrl: vehic, className: 'vehicle_icon'});
-        var watIcon = new mIcon({iconUrl: wat, className: 'water_icon'});
-        
+                
         // Define which markers are on or off
         var initialized = true;
         
         var markers_switch = {'Sidewalk or Street': false, 'Garbage': false, 'Defacement / Graffiti': false,
             'Sewage': false, 'Vehicles': false, 'Trees': false, 'Water': false};
         
-        $(function() {                
+        var display_all_types = true;
+            
+        var p_neighborhoods;
+        
+        var neighborhood_counts;
+        var neighborhood_sc_counts;
+        
+        var color = d3.scale.linear()
+            .domain([1, 400])
+            .range(["#C8E8C7", "#499E8D"])
+            .clamp(true);
+        
+        $(function() {
+            d3.json("/stats/category_counts", function(counts) {
+                var max = {'category':'','count':0}
+                    min = {'category': counts[1]['category'], 'count': counts[1]['count']};
+                
+                for (var i=0, len=counts.length; i < len; i++) {
+                    if (counts[i]['category']) {
+                        if (counts[i]['count'] > max['count']) {
+                            max['count'] = counts[i]['count'];
+                            max['category'] = counts[i]['category'];
+                        } else if (counts[i]['count'] < min['count']) {
+                            min['count'] = counts[i]['count'];
+                            min['category'] = counts[i]['category'];
+                        }
+                    }
+                }
+                                
+                // Most Requests over 30 days
+                $('#most-requests').html(max['category']);
+                
+                // Least Requests over 30 days
+                $('#least-requests').html(min['category']);
+            });
+        
+            d3.json("{{url_for('static', filename='planning_neighborhoods.json') }}", function(json) {
+                p_neighborhoods = json;
+            });
+            
+            d3.json("{{url_for('static', filename='neighborhood_sc_counts.json') }}", function(json) {
+                neighborhood_sc_counts = json;
+            });
+                    
             var map,
                 map_requests,
                 chart,
@@ -289,15 +247,8 @@
                 date_range = [],
                 sf_max_open,
                 sf_max_closed,
-                dc;
-            
-            // New
-            
-            var markers_by_dt = {}; // Markers by date and type
-            var cluster_groups;
-            var previous_cluster_group_date_range = []; 
-            
-            var displayByDate = true;
+                dc,
+                nm;
             
             var layer_groups_by_date = {};
             
@@ -383,7 +334,7 @@
                 } 
             }
             
-            function handleSRDisplay(type) {            
+            function handleSRDisplay(type) {
                 var shortened_types = {'ss': 'Sidewalk or Street', 'garbage': 'Garbage', 'graffiti': 'Defacement / Graffiti', 'sewage': 'Sewage',
                     'trees': 'Trees', 'vehicle': 'Vehicles', 'water': 'Water'};
                                     
@@ -418,25 +369,17 @@
                 }
                                            
                 initialized = false;
-            
-                /*
-                // If you select and deselect one thing
-                if (markers_switch[shortened_types[type]]) {
-                    for (date in markers_by_type[shortened_types[type]]) {
-                        if (date_range.indexOf(date) != -1) {
-                            for (marker in markers_by_type[shortened_types[type]][date]) {
-                                map.addLayer(markers_by_type[shortened_types[type]][date][marker]);
-                            }
-                        }
-                    }
-                } else {
-                    for (date in markers_by_type[shortened_types[type]]) {
-                        for (marker in markers_by_type[shortened_types[type]][date]) {
-                            map.removeLayer(markers_by_type[shortened_types[type]][date][marker]);
-                        }
+                
+                for (var ms in markers_switch) {
+                    display_all_types = true;
+                    
+                    if (!markers_switch[ms]) {
+                        display_all_types = false;
+                        break;
                     }
                 }
-                */
+                                
+                redraw_map([dc[selected_range[0]]['date'], dc[selected_range[1]]['date']]);
             }
             
             function setSRIconDisplay() {
@@ -459,30 +402,31 @@
             
             // Cache the results
             var requests_by_date = {};
-            
-            var mStyle = {
-                    radius: 3,
-                    color: "#FF0000",
-                    fillColor: "#FF0000",
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: .5
-            };    
-                
+                            
             function update_statistics(path) {
                 d3.json(path, function(data) {
-                    //console.log('average response time', data[0]['avg_response_time']);
-                    
                     $('#response-time').html(Math.round(data[0]['avg_response_time']) + ' Hours');
                 });
             }
             
             function resetBarColors() {
                 chart.selectAll(".open")
-                    .attr("fill", function(d, i) { if ((i < selected_range[0]) || (i > selected_range[1])) { return "#f2f2f2" } else { return "#cacaca" } } );
+                    .attr("fill", function(d, i) { 
+                        if ((i < selected_range[0]) || (i > selected_range[1])) { 
+                            return "#f2f2f2" 
+                        } else { 
+                            return "#cacaca" 
+                        } 
+                    } );
                 
                 chart2.selectAll(".closed")
-                    .attr("fill", function(d, i) { if ((i < selected_range[0]) || (i > selected_range[1])) { return "#f2f2f2" } else { return "#929292" } } );
+                    .attr("fill", function(d, i) { 
+                        if ((i < selected_range[0]) || (i > selected_range[1])) { 
+                            return "#f2f2f2" 
+                        } else { 
+                            return "#929292" 
+                        } 
+                    } );
             }
             
             function redraw_bar_chart(path) {
@@ -493,7 +437,6 @@
                 d3.json(path, function(daily_count) {
                     // Reset daily count
                     dc = daily_count;
-                    //console.log('Daily count length is: ' + daily_count.length);
                     
                     var max_open = d3.max(daily_count, function(d) { return d.Open; });
                     var max_closed = d3.max(daily_count, function(d) { return d.Closed; });
@@ -516,64 +459,7 @@
                             .attr("height", function(d) { return 75*d.Closed/max_closed; });
                 });
             }
-            
-            function loadRequestsPerDay(path) {
-                d3.csv(path, function(requests) {
-                
-                    var new_requests_by_date = d3.nest()
-                        .key(function(d) { return d.requested_date; })
-                        .map(requests);
-                    
-                    for (var date in new_requests_by_date) {
-                        requests_by_date[date] = new_requests_by_date[date];
                         
-                        var layer_group_by_date = createLayerGroup(new_requests_by_date[date]);
-                        
-                        layer_groups_by_date[date] = layer_group_by_date;
-                    }
-               }); 
-            }
-            
-            function resetMap(range) {
-                // Check requests by date
-                var start_day = range[0],
-                    sd_arr = start_day.split('-'), // Might want to change this, parse date
-                    end_day = range[1],
-                    ed_arr = end_day.split('-');
-                
-                var start_date = new Date(sd_arr[0],sd_arr[1]-1, sd_arr[2],"0"),
-                    end_date = new Date(ed_arr[0],ed_arr[1]-1, ed_arr[2],"1");
-                
-                var new_date_range = d3.time.day.range(start_date, end_date, 1).map(format);
-                
-                for (var i=0, max=new_date_range.length; i < max; i++) {
-                    if (new_date_range[i] in requests_by_date) {
-                        continue;
-                    } else {
-                        //loadRequestsPerDay(new_date_range[i]);
-                        var path = '/requests/reqs.csv?end_day=' + new_date_range[i] + '&time_delta=5';
-                        
-                        loadRequestsPerDay(path);
-                    }
-                }
-                
-                for (var i=0, max=date_range.length; i < max; i++) {
-                    if (new_date_range.indexOf(date_range[i]) == -1) {
-                        map.removeLayer(layer_groups_by_date[date_range[i]]);
-                    }
-                }
-                
-                for (var i=0, max=new_date_range.length; i < max; i++) {
-                    if (date_range.indexOf(new_date_range[i]) == -1) {
-                        map.addLayer(layer_groups_by_date[new_date_range[i]]);
-                    }
-                }
-                
-                setSRIconDisplay();
-                
-                date_range = new_date_range;
-            }
-            
             function setTitleDate(date_string) {            
                 var date_arr = date_string.split('-');
                 
@@ -603,7 +489,7 @@
                 $("#closed-count").html(total_closed);   
             }
             
-            
+            /*
             function sortServiceList() {
                 d3.json('/stats/sr_counts', function(counts) {
                     sr_counts_by_date = counts; // cache this
@@ -658,18 +544,18 @@
                     //return order;
                 });         
             }
-            
-            var lazyLoad = _.debounce(resetMap, 50);
-            
+            */   
             function draw_bar_chart(path) {
                 d3.json(path, function(daily_count) {
                     dc = daily_count;
                     
                     setTitleDate(dc[dc.length-1]['date']);
                     
-                    selected_range = [dc.length-3, dc.length-1];
+                    selected_range = [dc.length-9, dc.length-1];
                     
-                    sortServiceList();
+                    draw_map("{{url_for('static', filename='neighborhood_counts.json') }}", [dc[dc.length-9]['date'], dc[dc.length-1]['date']]);
+                    
+                    //sortServiceList();
                     setStatusCounts();
                     
                     $('#slider').dragslider({
@@ -679,35 +565,6 @@
                         min: 0,
                         max: dc.length-1,
                         values: selected_range,
-                        start: function(e, ui) {
-                            if (!displayByDate) {
-                                for (var group in cluster_groups) {
-                                    map.removeLayer(cluster_groups[group]);
-                                }
-                                
-                                for (var i=0; i < date_range.length; i++) {
-                                    //date_range.push(initial_date_range[i]);
-                                    map.addLayer(layer_groups_by_date[date_range[i]]);
-                                }
-                                
-                                displayByDate = true;
-                            }
-                        },
-                        stop: function(e, ui) {
-                            if (displayByDate) {
-                                for (var i=0; i < date_range.length; i++) {
-                                    map.removeLayer(layer_groups_by_date[date_range[i]]);
-                                }
-                                
-                                updateClusterGroups();
-                                
-                                for (var group in cluster_groups) {
-                                    map.addLayer(cluster_groups[group]);
-                                }
-                                
-                                displayByDate = false;
-                            }
-                        },
                         slide: function(e, ui) {
                             var start = ui['values'][0],
                                 end = ui['values'][1];
@@ -718,18 +575,17 @@
                             
                             console.log('dc',dc[start]['date'], dc[end]['date']);
                             
-                            lazyLoad([dc[start]['date'], dc[end]['date']]);
+                            //lazyLoad([dc[start]['date'], dc[end]['date']]);
+                            redraw_map([dc[start]['date'], dc[end]['date']]);
                             
                             setStatusCounts();
                             
-                            sortServiceList();
+                            //sortServiceList();
                         }
                     });
                     
                     $('.chart').css('display', 'block');
                     $('#typeList').css('display', 'block');
-                    
-                    //console.log('Daily count length is: ' + daily_count.length);
                     
                     var w = 850,
                         h = 100,
@@ -761,7 +617,6 @@
                       .attr("class", "open")
                       .attr("fill", function(d, i) { if (i < selected_range[0]) { return "#f2f2f2" } else { return "#cacaca" } } )
                       .attr("x", function(d, i) {
-                          //console.log('i', i);
                           return i * (w / daily_count.length);
                       })
                       .attr("y", .5*h+35)
@@ -784,8 +639,7 @@
                       .on("mouseout", function(){
                           d3.select(this).classed("active", false);
                           //$("#count").html("Count");
-                    
-                      })
+                      });
                       
                     chart2 = d3.select("#closed-chart")
                       .append("svg")
@@ -802,7 +656,6 @@
                       .attr("class", "closed")
                       .attr("fill", function(d, i) { if (i < selected_range[0]) { return "#f2f2f2" } else { return "#929292" } } )
                       .attr("x", function(d, i) {
-                                  //console.log('i', i);
                                   return i * (w / daily_count.length);
                       })
                       .attr("y", .5*h - 35)
@@ -826,9 +679,209 @@
                     });              
                 });            
             }
+            
+            function draw_map(path, range) {
+                d3.json(path, function(ncounts) {
+                    neighborhood_counts = ncounts;
+                    
+                    var neigh_conversion = {'Inner Richmond': 'inner_richmond', 'Financial District': 'financial_district', 
+                    'Castro/Upper Market': 'castro', 'Glen Park': 'glen_park', 'Western Addition': 'western_addition', 
+                    'Outer Richmond': 'outer_richmond', 'Parkside': 'parkside', 'Presidio Heights': 'presidio_heights', 
+                    'Bernal Heights': 'bernal', 'Golden Gate Park': 'gg_park', 'Lakeshore': 'lakeshore', 'Potrero Hill': 'potrero_hill', 
+                    'Pacific Heights': 'pacific_heights', 'Excelsior': 'excelsior', 'Visitacion Valley': 'visitacion', 'Marina': 'marina', 
+                    'Nob Hill': 'nob_hill', 'South of Market': 'soma', 'Chinatown': 'chinatown', 'Diamond Heights': 'diamond_heights', 
+                    'West of Twin Peaks': 'west_twin_peaks', 'Noe Valley': 'noe_valley', 'North Beach': 'north_beach', 
+                    'Crocker Amazon': 'crocker_amazon', 'Haight Ashbury': 'haight_ashbury', 'Outer Sunset': 'outer_sunset', 
+                    'Bayview': 'bayview', 'Ocean View': 'ocean_view', 'Seacliff': 'seacliff', 'Treasure Island/YBI': 'ti', 
+                    'Downtown/Civic Center': 'downtown', 'Presidio': 'presidio', 'Mission': 'mission', 'Inner Sunset': 'inner_sunset', 
+                    'Russian Hill': 'russian_hill', 'Outer Mission': 'outer_mission', 'Twin Peaks': 'twin_peaks'};
+                                        
+                    var counts_by_n = {"Bayview":0, "Bernal Heights":0, "Castro/Upper Market":0, "Chinatown":0, "Crocker Amazon":0, 
+                        "Diamond Heights":0, "Downtown/Civic Center":0, "Excelsior":0, "Financial District":0, "Glen Park":0, 
+                        "Golden Gate Park":0, "Haight Ashbury":0, "Inner Richmond":0, "Inner Sunset":0, "Lakeshore":0, "Marina":0, 
+                        "Mission":0, "Nob Hill":0, "Noe Valley":0, "North Beach":0, "Ocean View":0, "Outer Mission":0, "Outer Richmond":0, 
+                        "Outer Sunset":0, "Pacific Heights":0, "Parkside":0, "Potrero Hill":0, "Presidio":0, "Presidio Heights":0, 
+                        "Russian Hill":0, "Seacliff":0, "South of Market":0, "Treasure Island/YBI":0, "Twin Peaks":0, "Visitacion Valley":0, 
+                        "West of Twin Peaks":0, "Western Addition":0};
+                    
+                    var start_day = range[0],
+                        sd_arr = start_day.split('-'), // Might want to change this, parse date
+                        end_day = range[1],
+                        ed_arr = end_day.split('-');
+                    
+                    var start_date = new Date(sd_arr[0],sd_arr[1]-1, sd_arr[2],"0"),
+                        end_date = new Date(ed_arr[0],ed_arr[1]-1, ed_arr[2],"1");
+                    
+                    var new_date_range = d3.time.day.range(start_date, end_date, 1).map(format);
+                    
+                    for (var i=0, max=new_date_range.length; i < max; i++) {
+                        for (var neighborhood in neighborhood_counts[new_date_range[i]]){
+                            counts_by_n[neighborhood] = counts_by_n[neighborhood] + neighborhood_counts[new_date_range[i]][neighborhood];
+                        } 
+                    }
+                    
+                    var minLat = p_neighborhoods.features[0]['geometry']['coordinates'][0][0][1],
+                        minLon = p_neighborhoods.features[0]['geometry']['coordinates'][0][0][0],
+                        maxLat = p_neighborhoods.features[0]['geometry']['coordinates'][0][0][1],
+                        maxLon = p_neighborhoods.features[0]['geometry']['coordinates'][0][0][0];
+        
+                    for (var i=0; i < p_neighborhoods.features.length; i++) {
+                        for (var j=0; j < p_neighborhoods.features[i]['geometry']['coordinates'][0].length; j++) {
+                            var lon = p_neighborhoods.features[i]['geometry']['coordinates'][0][j][0];
+                            var lat = p_neighborhoods.features[i]['geometry']['coordinates'][0][j][1];
+            
+                            if (minLon > lon) {
+                                minLon = lon;
+                            } else if (lon > maxLon) {
+                                maxLon = lon;
+                            }
+                            
+                            if (minLat > lat) {
+                                minLat = lat; 
+                            } else if (lat > maxLat) {
+                                maxLat = lat;
+                            }
+                        }
+                    }
+                    
+                    var center_lat = .5*(minLat+maxLat);
+                    var center_lon = .5*(minLon+maxLon);
+        
+                    var proj = d3.geo.mercator().translate([.7*544600 + 60,.7*181870 - 60]).scale(.7*1600000);
+                    
+                    nm = d3.select("#neighborhood-map").append("svg")
+                        .attr("width", 960)
+                        .attr("height", 520);
+                        
+                    var path = d3.geo.path().projection(proj);
+                    
+                    var center = proj([center_lon, center_lat]);
+                    
+                    nm.selectAll("path")
+                        .data(p_neighborhoods.features)
+                    .enter()
+                    .append("a") // Add a link
+                    .attr("xlink:href", function(d) { return '/dashboard/' + neigh_conversion[d['properties']['neighborho']]})
+                    .append("path")
+                    .attr("class","neighborhood")
+                    .attr("id", function(d) {return d['properties']['neighborho'];})
+                    .on("mouseover", function(d) { console.log("over", d['properties']['neighborho']); d3.select(this).style("stroke", "#050505") })
+                    .on("mouseout", function() { d3.select(this).style("stroke", "white" )})
+                    .attr("d", path)
+                    .attr("transform", function(d) {
+                        var centroid = path.centroid(d),
+                            x = centroid[0],
+                            y = centroid[1];
+                                                    
+                        var x_distance = Math.abs(center[0] - x);
+                        
+                        var y_distance = Math.abs(center[1] - y);
+                        
+                        console.log(x_distance, y_distance);
+                                                
+                        var x_factor = 1;
+                        
+                        var y_factor = 1;
+                        return "translate(" + x*x_factor + "," + y*y_factor + ")"
+                            + "scale(.65)"
+                            + "translate(" + -x + "," + -y + ")";
+                    })
+                    .style("fill", function(d) {
+                        //console.log(color(counts_by_n[d['properties']['neighborho']]));
+                        return color(counts_by_n[d['properties']['neighborho']]); 
+                    })
+                    
+                    nm.selectAll("text")
+                        .data(p_neighborhoods.features)
+                        .enter()
+                        .append("text")
+                        .attr("class", "neighborhood_title")
+                        .attr("x", function(d) { 
+                                var centroid = path.centroid(d),
+                                x = centroid[0];
+                                
+                                return x;
+                        })
+                        .attr("y", function(d) {
+                            var centroid = path.centroid(d),
+                                y = centroid[1];
+                                
+                                return y;
+                        })
+                        .attr("text-anchor", "middle")
+                        .text(function(d) {
+                            return counts_by_n[d['properties']['neighborho']];
+                        });
+                        
+                });
+            }
+                        
+            function redraw_map(range) {                
+                var counts_by_n = {"Bayview":0, "Bernal Heights":0, "Castro/Upper Market":0, "Chinatown":0, "Crocker Amazon":0, 
+                    "Diamond Heights":0, "Downtown/Civic Center":0, "Excelsior":0, "Financial District":0, "Glen Park":0, 
+                    "Golden Gate Park":0, "Haight Ashbury":0, "Inner Richmond":0, "Inner Sunset":0, "Lakeshore":0, "Marina":0, 
+                    "Mission":0, "Nob Hill":0, "Noe Valley":0, "North Beach":0, "Ocean View":0, "Outer Mission":0, "Outer Richmond":0, 
+                    "Outer Sunset":0, "Pacific Heights":0, "Parkside":0, "Potrero Hill":0, "Presidio":0, "Presidio Heights":0, 
+                    "Russian Hill":0, "Seacliff":0, "South of Market":0, "Treasure Island/YBI":0, "Twin Peaks":0, "Visitacion Valley":0, 
+                    "West of Twin Peaks":0, "Western Addition":0};
+                
+                var start_day = range[0],
+                    sd_arr = start_day.split('-'), // Might want to change this, parse date
+                    end_day = range[1],
+                    ed_arr = end_day.split('-');
+                
+                var start_date = new Date(sd_arr[0],sd_arr[1]-1, sd_arr[2],"0"),
+                    end_date = new Date(ed_arr[0],ed_arr[1]-1, ed_arr[2],"1");
+                
+                var new_date_range = d3.time.day.range(start_date, end_date, 1).map(format);
+                
+                console.log(new_date_range);
+                
+                if (display_all_types) {
+                    for (var i=0, max=new_date_range.length; i < max; i++) {
+                        for (var neighborhood in neighborhood_counts[new_date_range[i]]){
+                            counts_by_n[neighborhood] = counts_by_n[neighborhood] + neighborhood_counts[new_date_range[i]][neighborhood];
+                        } 
+                    }                
+                } else {
+                    for (var i=0, max=new_date_range.length; i < max; i++) {
+                        for (var neigh in neighborhood_sc_counts[new_date_range[i]]) {
+                            for (var sw in markers_switch) {
+                                if (markers_switch[sw]) {
+                                    if (sw in neighborhood_sc_counts[new_date_range[i]][neigh]) {
+                                        counts_by_n[neigh] = counts_by_n[neigh] + neighborhood_sc_counts[new_date_range[i]][neigh][sw];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                console.log('counts by n', counts_by_n);
+                
+                // find max
+                
+                //var max = d3.max(d3.values(counts_by_n));
+                
+                //color.domain([0,max]);
+                
+                //var max = new_date_range.length * 200;
+                //color.domain([0,max]);
+                                                
+                nm.selectAll("path")
+                    .style("fill", function(d) {
+                        //console.log(color(counts_by_n[d['properties']['neighborho']]));
+                        return color(counts_by_n[d['properties']['neighborho']]); 
+                    });
+                
+                nm.selectAll("text")
+                    .text(function(d) {
+                            return counts_by_n[d['properties']['neighborho']];
+                    });
+            }
                         
             function changeViews() {
-                var bar_path = '/daily_count';
+                var bar_path = "{{url_for('static', filename='planning_neighborhoods.json') }}";
                 var stats_path = '/avg_resp_time';
                 
                 /* Generalize this for other cities */
@@ -853,222 +906,7 @@
                     map.setView(new L.LatLng(37.767, -122.44), 12); // Put this center in a config
                 }
             }
-                        
-            function updateClusterGroups() {
-                console.log('dr pcgdr', date_range, previous_cluster_group_date_range);
-                //var previous_cluster_group_date_range = []; 
-                for (var i=0, max=previous_cluster_group_date_range.length; i < max; i++) {
-                    if (date_range.indexOf(previous_cluster_group_date_range[i]) == -1) {
-                        //map.removeLayer(layer_groups_by_date[date_range[i]]);
-                        removeDateFromDisplay(previous_cluster_group_date_range[i]);
-                    }
-                }
-                
-                for (var i=0, max=date_range.length; i < max; i++) {
-                    if (previous_cluster_group_date_range.indexOf(date_range[i]) == -1) {
-                        //map.addLayer(layer_groups_by_date[new_date_range[i]]);
-                        addDateToDisplay(date_range[i]);
-                    }
-                }
-                
-                previous_cluster_group_date_range = date_range;
-            }
-            
-            
-            function removeDateFromDisplay(date) {
-                var marker_arrays = markers_by_dt[date];
-                
-                for (type in marker_arrays) {
-                    for (var i=0; i < marker_arrays[type].length; i++) {
-                        cluster_groups[type].removeLayer(marker_arrays[type][i]);
-                    }
-                }
-            }
-            
-            function addDateToDisplay(date) {
-                var marker_arrays = markers_by_dt[date];
-                
-                for (type in marker_arrays) {
-                    for (var i=0; i < marker_arrays[type].length; i++) {
-                        cluster_groups[type].addLayer(marker_arrays[type][i]);
-                    }
-                }
-            }
-            
-            function createClusterGroups() {
-                var ss_cluster = new L.MarkerClusterGroup({
-                    iconCreateFunction: function(count) {
-                        return new L.DivIcon({ html: '<div class="m-cluster ss-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
-                    }
-                });
-                
-                var garb_cluster = new L.MarkerClusterGroup({
-                    iconCreateFunction: function(count) {
-                        //return new L.DivIcon({ html: count, className: 'mycluster2', iconSize: new L.Point(40, 40) });
-                        return new L.DivIcon({ html: '<div class="m-cluster garb-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
-                    }
-                });
-                
-                var graf_cluster = new L.MarkerClusterGroup({
-                    iconCreateFunction: function(count) {
-                        //return new L.DivIcon({ html: count, className: 'mycluster3', iconSize: new L.Point(40, 40) });
-                        return new L.DivIcon({ html: '<div class="m-cluster graf-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
-                    }
-                });
-                
-                var sew_cluster = new L.MarkerClusterGroup({
-                    iconCreateFunction: function(count) {
-                        //return new L.DivIcon({ html: count, className: 'mycluster4', iconSize: new L.Point(40, 40) });
-                        return new L.DivIcon({ html: '<div class="m-cluster sew-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
-                    }
-                });
-                
-                var vehic_cluster = new L.MarkerClusterGroup({
-                    iconCreateFunction: function(count) {
-                        //return new L.DivIcon({ html: count, className: 'mycluster5', iconSize: new L.Point(40, 40) });
-                        return new L.DivIcon({ html: '<div class="m-cluster vehic-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
-                    }
-                });
-                
-                var trees_cluster = new L.MarkerClusterGroup({
-                    iconCreateFunction: function(count) {
-                        //return new L.DivIcon({ html: count, className: 'mycluster6', iconSize: new L.Point(40, 40) });
-                        return new L.DivIcon({ html: '<div class="m-cluster trees-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
-                    }
-                });
-                
-                var water_cluster = new L.MarkerClusterGroup({
-                    iconCreateFunction: function(count) {
-                        //return new L.DivIcon({ html: count, className: 'mycluster7', iconSize: new L.Point(40, 40) });
-                        return new L.DivIcon({ html: '<div class="m-cluster water-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
-                    }
-                });
-                
-                cluster_groups = {'ss': ss_cluster,'garb': garb_cluster,'graf':graf_cluster,
-                    'sew':sew_cluster,'vehic':vehic_cluster,'trees':trees_cluster,'water':water_cluster};
-            }
-            
-            function createLayerGroup(date,requests) {
-                var layer_group = new L.LayerGroup([]);
-                
-                var ss_cluster = new L.MarkerClusterGroup({
-                    iconCreateFunction: function(count) {
-                        return new L.DivIcon({ html: '<div class="m-cluster ss-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
-                    }
-                });
-                
-                var garb_cluster = new L.MarkerClusterGroup({
-                    iconCreateFunction: function(count) {
-                        //return new L.DivIcon({ html: count, className: 'mycluster2', iconSize: new L.Point(40, 40) });
-                        return new L.DivIcon({ html: '<div class="m-cluster garb-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
-                    }
-                });
-                
-                var graf_cluster = new L.MarkerClusterGroup({
-                    iconCreateFunction: function(count) {
-                        //return new L.DivIcon({ html: count, className: 'mycluster3', iconSize: new L.Point(40, 40) });
-                        return new L.DivIcon({ html: '<div class="m-cluster graf-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
-                    }
-                });
-                
-                var sew_cluster = new L.MarkerClusterGroup({
-                    iconCreateFunction: function(count) {
-                        //return new L.DivIcon({ html: count, className: 'mycluster4', iconSize: new L.Point(40, 40) });
-                        return new L.DivIcon({ html: '<div class="m-cluster sew-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
-                    }
-                });
-                
-                var vehic_cluster = new L.MarkerClusterGroup({
-                    iconCreateFunction: function(count) {
-                        //return new L.DivIcon({ html: count, className: 'mycluster5', iconSize: new L.Point(40, 40) });
-                        return new L.DivIcon({ html: '<div class="m-cluster vehic-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
-                    }
-                });
-                
-                var trees_cluster = new L.MarkerClusterGroup({
-                    iconCreateFunction: function(count) {
-                        //return new L.DivIcon({ html: count, className: 'mycluster6', iconSize: new L.Point(40, 40) });
-                        return new L.DivIcon({ html: '<div class="m-cluster trees-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
-                    }
-                });
-                
-                var water_cluster = new L.MarkerClusterGroup({
-                    iconCreateFunction: function(count) {
-                        //return new L.DivIcon({ html: count, className: 'mycluster7', iconSize: new L.Point(40, 40) });
-                        return new L.DivIcon({ html: '<div class="m-cluster water-cluster"><span style="line-height:40px">' + count + '</span></div>', className: 'marker-cluster', iconSize: new L.Point(40, 40) });
-                    }
-                });
-                
-                var marker,
-                    sc;
-                    
-                var ss = [];
-                var garb = [];
-                var graf = [];
-                var sew = [];
-                var vehic = [];
-                var trees = [];
-                var water = [];
-                
-                for (var i=0, max=requests.length; i < max; i++) {
-                    try {
-                        sc = new_service_list[requests[i]['service_code']]['group'];
-                    } catch (e) {
-                        //console.log(e);
-                        continue;
-                    }
-                    
-                    if (sc == 'Sidewalk or Street') {
-                        marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: ssIcon});
-                        ss_cluster.addLayer(marker);
-                        ss.push(marker);
-                    } else if (sc == 'Garbage') {
-                        marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: garbIcon});
-                        garb_cluster.addLayer(marker);
-                        garb.push(marker);
-                    } else if (sc == 'Defacement / Graffiti') {
-                        marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: grafIcon});
-                        graf_cluster.addLayer(marker);
-                        graf.push(marker);
-                    } else if (sc == 'Sewage') {
-                        marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: sewIcon});
-                        sew_cluster.addLayer(marker);
-                        sew.push(marker);
-                    } else if (sc == 'Vehicles') {
-                        marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: vehicIcon});
-                        vehic_cluster.addLayer(marker);
-                        vehic.push(marker);
-                    } else if (sc == 'Trees') {
-                        marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: treesIcon});
-                        trees_cluster.addLayer(marker);
-                        trees.push(marker);
-                    } else if (sc == 'Water') {
-                        marker = new L.Marker(new L.LatLng(requests[i].lat, requests[i].lon), {icon: watIcon});
-                        water_cluster.addLayer(marker);
-                        water.push(marker);
-                    }
-                                        
-                    marker.bindPopup('<b>' + requests[i].requested_date + '</b><br/><br/><b>Category: </b>' + sc + '<br/><br/><b>Status</b>: ' + requests[i].status);
-                    
-                    //console.log('requests of i', requests[i]);
-                    
-                    //layer_group.addLayer(marker);
-                }
-                
-                markers_by_dt[date] = {'ss':ss,'garb': garb,'graf':graf,'sew':sew,
-                    'vehic':vehic,'trees':trees,'water':water};
-                
-                layer_group.addLayer(ss_cluster);
-                layer_group.addLayer(garb_cluster);
-                layer_group.addLayer(graf_cluster);
-                layer_group.addLayer(sew_cluster);
-                layer_group.addLayer(vehic_cluster);
-                layer_group.addLayer(trees_cluster);
-                layer_group.addLayer(water_cluster);
-                
-                return layer_group;
-            }
-                    
+                              
             // Set up neighborhoods dropdown
             
             d3.csv("{{url_for('static', filename='js/neighborhood_list.csv')}}", function(neighborhoods) {
@@ -1084,54 +922,13 @@
                 $('#neighborhoods').change(changeViews);
             });
             
-            
-            // Handle statistics
-            
             // Average Response Time
             d3.json('/avg_resp_time', function(data) {
                 $('#response-time').html(Math.round(data[0]['avg_response_time']) + ' Hours');
             });
-                                
-            // Set up the map
-            d3.csv('/requests/latest', function(requests) {
-                var initial_date_range = [];
-                      
-                // Set up the map
-                map = new L.Map('map', {minZoom: 10, maxZoom: 18, scrollWheelZoom: false});
-                
-                map.setView(new L.LatLng(37.767, -122.44), 12)
-                    .addLayer(new L.TileLayer('http://tile.stamen.com/toner-lite/{z}/{x}/{y}.png'));
-                
-                // Handle the data
-                map_requests = requests; // Remove?
-                
-                requests_by_date = d3.nest()
-                    .key(function(d) { return d.requested_date; })
-                    .map(requests);
-                
-                for (var date in requests_by_date) { // Remove?
-                    initial_date_range.push(date);
-                }
-                
-                initial_date_range.sort(d3.ascending); // Default means we don't need d3.ascending
-                
-                draw_bar_chart('/daily_count');
-                
-                createClusterGroups();
-                
-                // Get 21 days
-                for (date in requests_by_date) {
-                    var layer_group_by_date = createLayerGroup(date,requests_by_date[date]);
-                    
-                    layer_groups_by_date[date] = layer_group_by_date;
-                }
-                
-                // Initially show 3 days
-                for (var i=initial_date_range.length-3; i < initial_date_range.length; i++) {
-                    date_range.push(initial_date_range[i]);
-                    map.addLayer(layer_groups_by_date[initial_date_range[i]]);
-                }
-            });
+            
+            draw_bar_chart("{{url_for('static', filename='daily_count.json') }}");
+            
         });
     </script>
     </head>
@@ -1148,27 +945,15 @@
         <h2 id="last-updated">&nbsp</h2>
         <div class="report">
             <div>
-                <h3>Neighborhood</h3>
-                <form>
-                    <select name="neighborhoods" id="neighborhoods">
-                        <option>San Francisco</option>
-                    </select>
-                </form>
+                <h3>Most Requests Past Month</h3>
+                <span id="most-requests"></span>
             </div>
             <div>
-                <h3>Most Requests Today</h3>
-                Sidewalk Cleaning 
+                <h3>Least Requests Past Month</h3>
+                <span id="least-requests"></span>
             </div>
             <div>
-                <!--
-                <h3>Stale Requests in 2012</h3>
-                <span id="stale">30</span> 
-                -->
-                <h3>Least Requests Today</h3>
-                Graffiti 
-            </div>
-            <div>
-                <h3>Median Response Time</h3>
+                <h3>Average Response Time</h3>
                 <span id='response-time'>&nbsp;</span> 
             </div>
         </div>
@@ -1186,35 +971,35 @@
             </div>
         </div>
         <div id="map_container" style="width: 960px; height: 520px;">
-            <div id="map"></div>
+            <div id="neighborhood-map"></div>
             <div id="typeList" style="display: none; width: 200px; height: auto; padding: 5px; top: 50px; left: 700px; background: rgba(255,255,255,.8); position: relative; z-index: 2;">
                     <span id="ss" class="type">
                         <span class="sr_image ss_selected">&nbsp</span>
                         <span id="ss_text" class="sr_text">Sidewalk or Street</span>
                     </span>
-                    <span id="graffiti" class="type">
-                        <span class="sr_image graffiti_selected">&nbsp</span>
-                        <span id="graffiti_text" class="sr_text">Defacement/Graffiti</span>
-                    </span>
-                    <span id="sewage" class="type">
-                        <span class="sr_image sewage_selected">&nbsp</span>
-                        <span id="sewage_text" class="sr_text">Sewage</span>
-                    </span>
-                    <span id="water" class="type">
-                        <span class="sr_image water_selected">&nbsp</span>
-                        <span id="water_text" class="sr_text">Water</span>
+                    <span id="garbage" class="type">
+                        <span class="sr_image garbage_selected">&nbsp</span>
+                        <span id="garbage_text" class="sr_text">Garbage</span>
                     </span>
                     <span id="vehicle" class="type">
                         <span class="sr_image vehicle_selected">&nbsp</span>
                         <span id="vehicle_text" class="sr_text">Vehicles</span>
                     </span>
+                    <span id="graffiti" class="type">
+                        <span class="sr_image graffiti_selected">&nbsp</span>
+                        <span id="graffiti_text" class="sr_text">Defacement/Graffiti</span>
+                    </span>
                     <span id="trees" class="type">
                         <span class="sr_image trees_selected">&nbsp</span>
                         <span id="trees_text" class="sr_text">Trees</span>
                     </span>
-                    <span id="garbage" class="type">
-                        <span class="sr_image garbage_selected">&nbsp</span>
-                        <span id="garbage_text" class="sr_text">Garbage</span>
+                    <span id="water" class="type">
+                        <span class="sr_image water_selected">&nbsp</span>
+                        <span id="water_text" class="sr_text">Water</span>
+                    </span>
+                    <span id="sewage" class="type">
+                        <span class="sr_image sewage_selected">&nbsp</span>
+                        <span id="sewage_text" class="sr_text">Sewage</span>
                     </span>
             </div>
         </div>

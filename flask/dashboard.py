@@ -11,8 +11,8 @@ ONE_DAY = timedelta(days=1)
 
 # configuration
 DATABASE = 'data/requests.db'
-SECRET_KEY = 'aaa' # change later
-DEBUG = True # delete this later, TURN OFF DEBUGGGING LATER
+SECRET_KEY = 'aaa' # CHANGE LATER
+DEBUG = True # TURN OFF DEBUGGGING LATER
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -36,8 +36,6 @@ def parse_date(date_str, date_format='%Y-%m-%d'):
         return None
         
 def query_db_lite(query, args=()):
-        #dbutils pylons
-        #cur = g.db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur = g.db.cursor()
         try:
                 cur.execute(query, args)
@@ -45,10 +43,7 @@ def query_db_lite(query, args=()):
                 #query_str = cur.mogrify(query,args)
                 #print query_str
         except psycopg2.DataError,err:
-                print 'Error', err
-
-        #print 'description', cur.description
-        
+                print 'Error', err        
         try:
                 res = cur.fetchall() # fetching everything, rename the method?
         except psycopg2.ProgrammingError, err:
@@ -56,44 +51,33 @@ def query_db_lite(query, args=()):
                 
                 print 'Error', err
 
-        cur.close() # is this necessary?
+        cur.close() # Is this necessary?
 
         return res
 
 def query_db(query, args=()):
-        #dbutils pylons
         cur = g.db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         try:
                 cur.execute(query, args)
-
-                #query_str = cur.mogrify(query,args)
-                #print query_str
         except psycopg2.DataError,err:
                 print 'Error', err
-
-        #print 'description', cur.description
         
         try:
-                res = cur.fetchall() # fetching everything, rename the method?
+                res = cur.fetchall()
         except psycopg2.ProgrammingError, err:
                 res = None
                 
                 print 'Error', err
 
-        cur.close() # is this necessary?
+        cur.close()
 
         return res
 
 def create_json(attrs, res):
-        # stats
-
-        # requests.append({'stats': {'count': len(res)}})
-
         requests = []
 
         for row in res:
-            # Check if date day is different? Just calculate stats in python?
             # http://stackoverflow.com/questions/51553/why-are-sql-aggregate-functions-so-much-slower-than-python-and-java-or-poor-man
             requests.append(dict(zip(attrs,row)))
 
@@ -128,62 +112,56 @@ def create_null_response(callback='data'):
 def request_display(type=None, service_request_id=None, status=None):
     limit = request.args.get('limit', 10, type=str)
 
-    # Need to add things like date ascending
-    # add callback parameter
-
-    #http://127.0.0.1:5000/requests/status/Closed/requests.jsonp?limit=50
-    # API key? hide endpoint? http://jetfar.com/simple-api-key-generation-in-python/
-    #Only use post if we end up with very long url names
-
-    # lowercase at some point
-    # get the official request list
-
-    # Put in paramater for number of results
-    
-    # Cache the json generated on each call? otherwise call the database.
-
     if type == 'jsonp':
-            # cursor_factory=psycopg2.extras.DictCursor What does this do?
-
             if status:
                     if status == 'Open' or status == 'Closed':
-                        # Handle uppercase? Make it case insensitive. Private API.
-                        # change postgres to stop disitinguishing between upper and lower case
-                        #cur.execute("""SELECT status, service_name, service_request_id, CAST(requested_datetime AS text), address, lat, lon FROM sf_requests WHERE status=(%s) ORDER BY requested_datetime DESC Limit (%s)""", (status, limit))
-                        
-                        results = query_db("""SELECT status, service_name, service_request_id, CAST(requested_datetime AS text), address, lat, lon FROM sf_requests WHERE status=(%s) ORDER BY requested_datetime DESC Limit (%s)""", (status, limit))
+                        results = query_db("""
+                            SELECT 
+                                status, service_name, service_request_id, CAST(requested_datetime AS text), 
+                                address, lat, lon 
+                            FROM sf_requests 
+                            WHERE status=(%s) 
+                            ORDER BY requested_datetime DESC Limit (%s)
+                        """, (status, limit))
             
             elif service_request_id:
-                    #http://127.0.0.1:5000/requests/1134232/requests.jsonp
-
-                    results = query_db("""SELECT status, service_name, service_request_id, CAST(requested_datetime AS text), address, lat, lon FROM sf_requests WHERE service_request_id=(%s) Limit (%s)""", (service_request_id, limit))
-                    
+                    results = query_db("""
+                        SELECT 
+                            status, service_name, service_request_id, CAST(requested_datetime AS text), 
+                            address, lat, lon 
+                        FROM sf_requests 
+                        WHERE service_request_id=(%s) Limit (%s)
+                    """, (service_request_id, limit))
             else:
-                    results = query_db("""SELECT status, service_name, service_request_id, CAST(requested_datetime AS text), address, lat, lon FROM sf_requests ORDER BY requested_datetime DESC Limit (%s)""", (limit,))
+                    results = query_db("""
+                        SELECT 
+                            status, service_name, service_request_id, CAST(requested_datetime AS text), 
+                            address, lat, lon 
+                        FROM sf_requests 
+                        ORDER BY requested_datetime DESC Limit (%s)
+                    """, (limit,))
             
-
             return create_jsonp_response_from_dbresult(results)
     else:
             abort(404)
 
 @app.route("/requests/stats/<start_day>..<end_day>/stats.<type>", methods=['POST', 'GET'])
 def stats(type=None, start_day=None, end_day=None):
-    if type == 'jsonp': # just have type json with jsonp?
-        #for k in psycopg2.extensions.string_types.keys():
-            #del psycopg2.extensions.string_types[k]
-
-        #psycopg2.extensions.string_types.clear()
-
+    if type == 'jsonp':
         if start_day:
             start_date = parse_date(start_day)
             end_date = (end_day and parse_date(end_day)) or start_date + ONE_DAY
 
-            results = query_db("""SELECT CAST(DATE(requested_datetime) AS text) AS date, COUNT(*) AS reports FROM sf_requests WHERE requested_datetime BETWEEN (%s) AND (%s) GROUP BY date ORDER BY date ASC""", (start_date, end_date))
-
-            # stringify
-            #for result in results:
-                #result['date'] = str(result['date'])
-
+            results = query_db("""
+                SELECT 
+                    CAST(DATE(requested_datetime) AS text) AS date, 
+                    COUNT(*) AS reports 
+                FROM sf_requests 
+                WHERE requested_datetime BETWEEN (%s) AND (%s) 
+                GROUP BY date 
+                ORDER BY date ASC
+            """, (start_date, end_date))
+            
             if results:
                 requests_json = json.dumps(results)
 
@@ -194,7 +172,6 @@ def stats(type=None, start_day=None, end_day=None):
 @app.route("/neighborhoods/data/<neighborhood>.<type>", methods=['POST', 'GET'])
 @app.route("/neighborhoods/<neighborhood>", methods=['POST', 'GET'])
 def neighborhoods(type=None, neighborhood=None, count=None, daily_count=None, top_requests=None, weekly_count=None):
-    # need to change neighborhood names in database
     if neighborhood:
         if neighborhood == 'Downtown_Civic_Center':
             neighborhood = 'Downtown/Civic Center'
@@ -203,19 +180,53 @@ def neighborhoods(type=None, neighborhood=None, count=None, daily_count=None, to
         else:
             neighborhood = neighborhood.replace('_',' ');
     
-        results = query_db("""select r.status,r.service_code,CAST(DATE(r.requested_datetime) AS text), CAST(DATE(r.updated_datetime) AS text) as updated_datetime, CAST(DATE(r.expected_datetime) AS text) as expected_datetime, r.service_name,r.lon,r.lat,p.neighborho from sf_requests as r join pn_geoms as p on ST_INTERSECTS(geom, ST_GeomFromText('POINT(' || r.lon || ' ' || r.lat || ')')) WHERE p.neighborho=(%s) LIMIT 1000""", (neighborhood,))
+        results = query_db("""
+            SELECT 
+                r.status, r.service_code, CAST(DATE(r.requested_datetime) AS text), 
+                CAST(DATE(r.updated_datetime) AS text) as updated_datetime,
+                CAST(DATE(r.expected_datetime) AS text) as expected_datetime, 
+                r.service_name,r.lon,r.lat,p.neighborho 
+            FROM sf_requests as r 
+            JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat)) 
+            WHERE p.neighborho=(%s) 
+            LIMIT 1000
+        """, (neighborhood,))
         
-        count = query_db("""select count(r.*), r.status, p.neighborho from sf_requests as r join pn_geoms as p on ST_INTERSECTS(geom, ST_GeomFromText('POINT(' || r.lon || ' ' || r.lat || ')')) WHERE p.neighborho=(%s) AND r.requested_datetime between now() - INTERVAL '30 DAY' and now() group by r.status, p.neighborho""", (neighborhood,))
-        #print 'count', count
-        # [{'count': 202L, 'neighborho': 'Seacliff'}]
-        # count [{'count': 64L, 'status': 'Open', 'neighborho': 'West of Twin Peaks'}, {'count': 60L, 'status': 'Closed', 'neighborho': 'West of Twin Peaks'}]
+        count = query_db("""
+            SELECT count(r.*), r.status, p.neighborho 
+            FROM sf_requests as r 
+            JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
+            WHERE p.neighborho=(%s) AND r.requested_datetime BETWEEN NOW() - INTERVAL '30 DAY' and NOW() 
+            GROUP BY r.status, p.neighborho
+        """, (neighborhood,))
 
-        daily_count_res = query_db("""SELECT CAST(DATE(r.requested_datetime) as text), COUNT(r.*) FROM sf_requests as r join pn_geoms as p on ST_INTERSECTS(geom, ST_GeomFromText('POINT(' || r.lon || ' ' || r.lat || ')')) WHERE p.neighborho=(%s) AND r.requested_datetime BETWEEN NOW() - INTERVAL '12 Week' AND NOW() GROUP BY DATE(r.requested_datetime) ORDER BY DATE(r.requested_datetime) ASC""", (neighborhood,))
-        print 'daily_count_res', daily_count_res
+        daily_count_res = query_db("""
+            SELECT CAST(DATE(r.requested_datetime) as text), COUNT(r.*) 
+            FROM sf_requests as r 
+            JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
+            WHERE p.neighborho=(%s) AND r.requested_datetime 
+            BETWEEN NOW() - INTERVAL '12 Week' AND NOW() 
+            GROUP BY DATE(r.requested_datetime) 
+            ORDER BY DATE(r.requested_datetime) ASC
+        """, (neighborhood,))
 
-        weekly_count_res = query_db("""SELECT CAST(DATE(date_trunc('week', r.requested_datetime)) as text) as "Week", COUNT(r.*) FROM sf_requests as r join pn_geoms as p on ST_INTERSECTS(geom, ST_GeomFromText('POINT(' || r.lon || ' ' || r.lat || ')')) WHERE p.neighborho=(%s) AND r.requested_datetime BETWEEN NOW() - INTERVAL '3 months' AND NOW() GROUP BY "Week" ORDER BY "Week" ASC""", (neighborhood,))
+        weekly_count_res = query_db("""
+            SELECT CAST(DATE(date_trunc('week', r.requested_datetime)) as text) as "Week", COUNT(r.*) 
+            FROM sf_requests as r 
+            JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
+            WHERE p.neighborho=(%s) AND r.requested_datetime BETWEEN NOW() - INTERVAL '3 months' AND NOW() 
+            GROUP BY "Week" 
+            ORDER BY "Week" ASC
+        """, (neighborhood,))
 
-        top_requests = query_db("""select count(r.*), r.service_name, r.service_code, p.neighborho from sf_requests as r join pn_geoms as p on ST_INTERSECTS(geom, ST_GeomFromText('POINT(' || r.lon || ' ' || r.lat || ')')) WHERE p.neighborho=(%s) AND r.requested_datetime between now() - INTERVAL '30 DAY' and now() group by r.service_name, r.service_code, p.neighborho order by count(r.*) DESC;""", (neighborhood,))
+        top_requests = query_db("""
+            SELECT COUNT(r.*), r.service_name, r.service_code, p.neighborho 
+            FROM sf_requests as r 
+            JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
+            WHERE p.neighborho=(%s) AND r.requested_datetime between now() - INTERVAL '30 DAY' and now() 
+            GROUPBY r.service_name, r.service_code, p.neighborho 
+            ORDER BY count(r.*) DESC
+        """, (neighborhood,))
 
         if results:
             requests_json = json.dumps(results)
@@ -224,40 +235,77 @@ def neighborhoods(type=None, neighborhood=None, count=None, daily_count=None, to
                 return create_jsonp_response(requests_json, 'data')
             else:
                 res = requests_json
-                return render_template('neighborhood.html', neighborhood=neighborhood, results=res, count=count, daily_count=daily_count_res, weekly_count=weekly_count_res, top_requests=top_requests)
+                return render_template('neighborhood.html', neighborhood=neighborhood, 
+                                        results=res, count=count, 
+                                        daily_count=daily_count_res, 
+                                        weekly_count=weekly_count_res, 
+                                        top_requests=top_requests)
         else:
             return create_null_response()
 
 @app.route("/types/<service_code>", methods=['POST', 'GET'])
 def types(type=None, service_code=None, count=None, total_count=None, weekly_count=None):
-    # strip leading zeros from service json
-
     if service_code:
-        results = query_db("""SELECT status, service_name, service_request_id, CAST(DATE(requested_datetime) AS text), CAST(DATE(updated_datetime) AS text) as updated_datetime, CAST(DATE(expected_datetime) AS text) as expected_datetime, address, lat, lon FROM sf_requests WHERE service_code=(%s) ORDER BY requested_datetime ASC Limit 1000""", (service_code.lstrip('0'),))
+        results = query_db("""
+            SELECT 
+                status, service_name, service_request_id, 
+                CAST(DATE(requested_datetime) AS text), 
+                CAST(DATE(updated_datetime) AS text) as updated_datetime, 
+                CAST(DATE(expected_datetime) AS text) as expected_datetime, 
+                address, lat, lon 
+            FROM sf_requests 
+            WHERE service_code=(%s) 
+            ORDER BY requested_datetime ASC 
+            Limit 1000
+        """, (service_code.lstrip('0'),))
 
-        total_count_per_day = query_db("""SELECT CAST(DATE(requested_datetime) as text) as date, COUNT(*) as count FROM sf_requests WHERE service_code=(%s) AND requested_datetime BETWEEN NOW() - INTERVAL '30 DAY' AND NOW() GROUP BY date ORDER BY count DESC""", (service_code.lstrip('0'),))
+        total_count_per_day = query_db("""
+            SELECT 
+                CAST(DATE(requested_datetime) as text) as date, 
+                COUNT(*) as count 
+            FROM sf_requests 
+            WHERE service_code=(%s) AND requested_datetime BETWEEN NOW() - INTERVAL '30 DAY' AND NOW() 
+            GROUP BY date 
+            ORDER BY count DESC
+        """, (service_code.lstrip('0'),))
 
-        count = query_db("""SELECT status, count(*) FROM sf_requests WHERE service_code=(%s) and requested_datetime between now() - INTERVAL '30 DAY' and now() group by status""", (service_code.lstrip('0'),))
-
-        #print 'count', count
-
-        # count [{'status': 'Closed', 'count': 9L}, {'status': 'Open', 'count': 60L}]
-
-        daily_count_res = query_db("""SELECT CAST(DATE(requested_datetime) as text), COUNT(*), status FROM sf_requests WHERE service_code=(%s) AND requested_datetime BETWEEN NOW() - INTERVAL '60 DAY' AND NOW() GROUP BY DATE(requested_datetime), status ORDER BY DATE(requested_datetime) ASC""", (service_code.lstrip('0'),))
+        count = query_db("""
+            SELECT 
+                status, COUNT(*) 
+            FROM sf_requests WHERE service_code=(%s) and requested_datetime between now() - INTERVAL '30 DAY' and now() 
+            GROUP BY status
+        """, (service_code.lstrip('0'),))
         
-        weekly_count_res = query_db("""SELECT CAST(DATE(date_trunc('week', requested_datetime)) as text) as "Week", COUNT(*) FROM sf_requests WHERE service_code=(%s) AND requested_datetime BETWEEN NOW() - INTERVAL '3 months' AND NOW() GROUP BY "Week" ORDER BY "Week" ASC""", (service_code.lstrip('0'),))
+        daily_count_res = query_db("""
+            SELECT 
+                CAST(DATE(requested_datetime) as text), COUNT(*), status 
+            FROM sf_requests 
+            WHERE service_code=(%s) AND requested_datetime BETWEEN NOW() - INTERVAL '60 DAY' AND NOW() 
+            GROUP BY DATE(requested_datetime), status 
+            ORDER BY DATE(requested_datetime) ASC
+        """, (service_code.lstrip('0'),))
+        
+        weekly_count_res = query_db("""
+            SELECT 
+                CAST(DATE(date_trunc('week', requested_datetime)) as text) as "Week", 
+                COUNT(*) FROM sf_requests 
+            WHERE service_code=(%s) AND requested_datetime BETWEEN NOW() - INTERVAL '3 months' AND NOW() 
+            GROUP BY "Week" ORDER BY "Week" ASC
+        """, (service_code.lstrip('0'),))
 
         daily_count_list = []
 
+        # This needs to be cleaned up
         for i,j in enumerate(daily_count_res):
             if (i+1) == len(daily_count_res):
                 break
-            # can consolidate these into one statement
             elif daily_count_res[i]['date'] == daily_count_res[i+1]['date']:
-                #daily_count_list.append({str(int(.5*i)): {daily_count_res[i]['date']: {daily_count_res[i]['status']:daily_count_res[i]['count'], daily_count_res[i+1]['status']: daily_count_res[i+1]['count']}}})
-                daily_count_list.append({'date': daily_count_res[i]['date'], daily_count_res[i]['status']:daily_count_res[i]['count'], daily_count_res[i+1]['status']: daily_count_res[i+1]['count']})
+                daily_count_list.append({'date': daily_count_res[i]['date'], 
+                                        daily_count_res[i]['status']:daily_count_res[i]['count'], 
+                                        daily_count_res[i+1]['status']: daily_count_res[i+1]['count']})
             elif daily_count_res[i-1]['date'] != daily_count_res[i]['date']:
-                daily_count_list.append({'date': daily_count_res[i]['date'], daily_count_res[i]['status']:daily_count_res[i]['count']})
+                daily_count_list.append({'date': daily_count_res[i]['date'], 
+                                        daily_count_res[i]['status']:daily_count_res[i]['count']})
 
         daily_count_json = json.dumps(daily_count_list)
 
@@ -269,22 +317,21 @@ def types(type=None, service_code=None, count=None, total_count=None, weekly_cou
             return create_jsonp_response(requests_json, 'data')
         else:
             res = requests_json
-            return render_template('type.html', service_code=service_code, results=res, count=count, daily_count=daily_count_json, total_count=total_count_per_day, weekly_count=weekly_count_res)
+            return render_template('type.html', service_code=service_code, 
+                                    results=res, count=count, daily_count=daily_count_json, 
+                                    total_count=total_count_per_day, weekly_count=weekly_count_res)
     else:
         return create_null_response()
 
 @app.route("/daily_count")
 def daily_count(count=None):
+    #The following code is repeated too many times.
     days = request.args.get("days", 60)
-    
-    #end_date = datetime.now()
     
     res = query_db("""
         SELECT MAX(requested_datetime) AS max_date
         FROM sf_requests
     """)
-    
-    #print 'latest:', res
     
     end_date = res[0]['max_date']
     
@@ -302,26 +349,7 @@ def daily_count(count=None):
         GROUP BY DATE(requested_datetime), status 
         ORDER BY DATE(requested_datetime) ASC
     """, (fmt_start_date, fmt_end_date))
-
-    print daily_count_res
-    #print start_date, end_date
-    print fmt_start_date, fmt_end_date
-
-    """
-    daily_count_list = []
-
-    for i,j in enumerate(daily_count_res):
-        if (i+1) == len(daily_count_res):
-            break
-        elif daily_count_res[i]['date'] == daily_count_res[i+1]['date']:
-            #daily_count_list.append({str(int(.5*i)): {daily_count_res[i]['date']: {daily_count_res[i]['status']:daily_count_res[i]['count'], daily_count_res[i+1]['status']: daily_count_res[i+1]['count']}}})
-            daily_count_list.append({'date': daily_count_res[i]['date'], daily_count_res[i]['status']:daily_count_res[i]['count'], daily_count_res[i+1]['status']: daily_count_res[i+1]['count']})
-        else:
-            continue
-
-    #print daily_count_list
-    """
-    
+        
     input_exhausted = False
     
     date = start_date
@@ -365,14 +393,10 @@ def daily_count_by_neighborhood(count=None):
     days = request.args.get("days", 60)
     neighborhood = request.args.get("neighborhood")
     
-    #end_date = datetime.now()
-    
     res = query_db("""
         SELECT MAX(requested_datetime) AS max_date
         FROM sf_requests
     """)
-    
-    #print 'latest:', res
     
     end_date = res[0]['max_date']
     
@@ -386,13 +410,10 @@ def daily_count_by_neighborhood(count=None):
         SELECT 
             CAST(DATE(r.requested_datetime) as text), count(r.*), r.status
         FROM sf_requests as r
-        JOIN pn_geoms as p
-        ON ST_INTERSECTS(geom, ST_GeomFromText('POINT(' || r.lon || ' ' || r.lat || ')'))
+        JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
         WHERE p.neighborho=(%s) AND DATE(requested_datetime) BETWEEN (%s) AND (%s)
         GROUP BY date(r.requested_datetime), r.status order by date(r.requested_datetime) ASC
     """, (neighborhood, fmt_start_date, fmt_end_date))
-    
-    print daily_count_res
     
     input_exhausted = False
     
@@ -429,12 +450,7 @@ def daily_count_by_neighborhood(count=None):
         date = date + timedelta(1)
         
         results.append(info)
-    """
-    for d in daily_count_res:
-        if d['date'] == fmt_start_date:
-            print 'found date'
-    """
-    
+            
     return json.dumps(results)
 
 @app.route("/")
@@ -447,33 +463,43 @@ def home(daily_count=None):
         GROUP BY DATE(requested_datetime), status 
         ORDER BY DATE(requested_datetime) ASC
     """)
-
-    #print daily_count_res
-
+    
     daily_count_list = []
 
     for i,j in enumerate(daily_count_res):
         if (i+1) == len(daily_count_res):
             break
         elif daily_count_res[i]['date'] == daily_count_res[i+1]['date']:
-            #daily_count_list.append({str(int(.5*i)): {daily_count_res[i]['date']: {daily_count_res[i]['status']:daily_count_res[i]['count'], daily_count_res[i+1]['status']: daily_count_res[i+1]['count']}}})
-            daily_count_list.append({'date': daily_count_res[i]['date'], daily_count_res[i]['status']:daily_count_res[i]['count'], daily_count_res[i+1]['status']: daily_count_res[i+1]['count']})
+            daily_count_list.append({'date': daily_count_res[i]['date'], 
+                                    daily_count_res[i]['status']:daily_count_res[i]['count'], 
+                                    daily_count_res[i+1]['status']: daily_count_res[i+1]['count']})
         else:
             continue
 
-    print daily_count_list
-
     daily_count_json = json.dumps(daily_count_list)
-
-    #print daily_count_json
 
     return render_template('home.html', daily_count=daily_count_json)
 
 @app.route("/neighborhoods/")
 def neighborhoods_list():
-    results = query_db("""SELECT service_name, service_code, count(*) as count FROM sf_requests WHERE requested_datetime between NOW() - INTERVAL '3 MONTH' AND NOW() GROUP BY service_name, service_code order by count DESC Limit 15""")
+    results = query_db("""
+        SELECT 
+            service_name, service_code, COUNT(*) as count 
+        FROM sf_requests 
+        WHERE requested_datetime between NOW() - INTERVAL '3 MONTH' AND NOW() 
+        GROUP BY service_name, service_code 
+        ORDER BY count DESC 
+        Limit 15
+    """)
 
-    top_neighborhoods = query_db("""select count(r.*) as count,p.neighborho from sf_requests as r join pn_geoms as p on ST_INTERSECTS(geom, ST_GeomFromText('POINT(' || r.lon || ' ' || r.lat || ')')) WHERE r.requested_datetime between now() - INTERVAL '30 DAY' and now() group by p.neighborho order by count desc""")
+    top_neighborhoods = query_db("""
+        SELECT 
+            COUNT(r.*) as count, p.neighborho 
+        FROM sf_requests as r 
+        JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
+        WHERE r.requested_datetime between now() - INTERVAL '30 DAY' and now() 
+        GROUP BY p.neighborho order by count DESC
+    """)
 
     if results:
         requests_json = json.dumps(results)
@@ -490,30 +516,9 @@ def types_list():
 def daily_list():
     return render_template('daily.html')
     
-"""
-@app.route("/requests/latest", methods=['POST', 'GET'])
-def get_latest_requests1():
-    days = request.args.get("days", "60")
-    if not days.isdigit():
-        raise Exception("'days' must be a number")
-
-    res = query_db("
-        SELECT MAX(requested_datetime) AS max_date
-        FROM sf_requests
-    ")
-    # print 'latest:', res
-    end_date = res[0]['max_date']
-    # print 'max date:', end_date
-
-    start_date = end_date - timedelta(days=int(days))
-    fmt = '%Y-%m-%d'
-    return get_requests_by_date(start_date.strftime(fmt), end_date.strftime(fmt))
-"""
-
 # Handle dates
 @app.route("/requests/daily/<start_day>..<end_day>", methods=['POST', 'GET'])
 def get_requests_by_date(start_day=None, end_day=None):
-    print 'get requests'
     if start_day and end_day:
         print start_day, end_day
         
@@ -541,38 +546,47 @@ def get_requests_by_date(start_day=None, end_day=None):
 @app.route("/daily/<start_day>", methods=['POST', 'GET'])
 """
 def request_display_by_date(type=None, start_day=None, end_day=None):
-    limit = request.args.get('limit', 1, type=str) # don't repeat?
-    # just try count and group by and see how slow it is
-    #limit = 10
-
-    # ideal structure is {some-date: [incident, incident, incident]}
+    limit = request.args.get('limit', 1, type=str)
 
     if start_day and end_day:
         start_date = parse_date(start_day)
         end_date = (end_day and parse_date(end_day)) or start_date + ONE_DAY
 
-        res = query_db("""SELECT status, service_name, service_request_id, CAST(DATE(requested_datetime) AS text), CAST(DATE(updated_datetime) AS text) as updated_datetime, CAST(DATE(expected_datetime) AS text) as expected_datetime, address, lat, lon FROM sf_requests WHERE requested_datetime BETWEEN (%s) AND (%s) ORDER BY requested_datetime ASC Limit 1000""", (start_date, end_date))
+        res = query_db("""
+            SELECT 
+                status, service_name, service_request_id, 
+                CAST(DATE(requested_datetime) AS text), 
+                CAST(DATE(updated_datetime) AS text) as updated_datetime, 
+                CAST(DATE(expected_datetime) AS text) as expected_datetime, 
+                address, lat, lon 
+            FROM sf_requests 
+            WHERE requested_datetime BETWEEN (%s) AND (%s) 
+            ORDER BY requested_datetime ASC Limit 1000
+        """, (start_date, end_date))
 
         requests_json = json.dumps(res)
-
-        print 'requests json', requests_json
 
         if type == 'jsonp':
             return create_jsonp_response(requests_json, 'data')
         else:
             return render_template('requests_range.html', results=requests_json)
     elif start_day:
-        # can consolidate this code
-
         start_date = parse_date(start_day)
-        #end_date = (end_day and parse_date(end_day)) or start_date + ONE_DAY
         end_date = start_date + ONE_DAY
 
-        res = query_db("""SELECT status, service_name, service_request_id, CAST(DATE(requested_datetime) AS text), CAST(DATE(updated_datetime) AS text) as updated_datetime, CAST(DATE(expected_datetime) AS text) as expected_datetime, address, lat, lon FROM sf_requests WHERE requested_datetime BETWEEN (%s) AND (%s) ORDER BY requested_datetime ASC Limit 1000""", (start_date, end_date))
+        res = query_db("""
+            SELECT 
+                status, service_name, service_request_id, 
+                CAST(DATE(requested_datetime) AS text), 
+                CAST(DATE(updated_datetime) AS text) as updated_datetime, 
+                CAST(DATE(expected_datetime) AS text) as expected_datetime, 
+                address, lat, lon 
+            FROM sf_requests 
+            WHERE requested_datetime BETWEEN (%s) AND (%s) 
+            ORDER BY requested_datetime ASC Limit 1000
+        """, (start_date, end_date))
 
         requests_json = json.dumps(res)
-
-        print 'requests json', requests_json
 
         if type == 'jsonp':
             return create_jsonp_response(requests_json, 'data')
@@ -587,6 +601,20 @@ def request_display_by_date(type=None, start_day=None, end_day=None):
 def avg_resp_time():
     neighborhood = request.args.get('neighborhood', None)
     
+    res = query_db("""
+        SELECT MAX(requested_datetime) AS max_date
+        FROM sf_requests
+    """)
+    
+    end_date = res[0]['max_date']
+
+    start_date = end_date - timedelta(days=int(7))
+    
+    fmt = '%Y-%m-%d'
+    
+    start_day = start_date.strftime(fmt);
+    end_day = end_date.strftime(fmt)
+    
     if neighborhood:
         res = query_db("""
             SELECT
@@ -594,8 +622,8 @@ def avg_resp_time():
             FROM sf_requests as r
             JOIN pn_geoms as p
             ON ST_INTERSECTS(geom, ST_GeomFromText('POINT(' || r.lon || ' ' || r.lat || ')'))
-            WHERE p.neighborho=(%s) AND r.status='Closed' AND r.requested_datetime BETWEEN now() - INTERVAL '7 day' AND now()
-        """, (neighborhood,))
+            WHERE p.neighborho=(%s) AND r.status='Closed' AND r.requested_datetime BETWEEN (%s) and (%s)
+        """, (neighborhood,start_date,end_date))
                 
         return json.dumps(res)
     else:
@@ -603,8 +631,8 @@ def avg_resp_time():
             SELECT
                 AVG((EXTRACT(Epoch from updated_datetime - requested_datetime)/3600)::Integer) as "avg_response_time"
             FROM sf_requests
-            WHERE status='Closed' AND requested_datetime between now() - interval '7 day' and now()
-        """)
+            WHERE status='Closed' AND requested_datetime between (%s) and (%s)
+        """, (start_date,end_date))
         
         return json.dumps(res)
 
@@ -637,9 +665,8 @@ def get_latest_csv():
         SELECT MAX(requested_datetime) AS max_date
         FROM sf_requests
     """)
-    #print 'latest:', res
+
     end_date = res[0]['max_date']
-    #print 'max date:', end_date
 
     start_date = end_date - timedelta(days=int(days))
     
@@ -667,13 +694,79 @@ def get_requests_by_date_csv(format=None,start_day=None, end_day=None):
         res = query_db("""
             SELECT 
                 service_request_id,status,service_code, 
-                CAST(DATE(requested_datetime)AS text) as requested_date,lat,lon 
+                CAST(DATE(requested_datetime)AS text) as requested_date,lat,lon,neighborhood
             FROM sf_requests 
             WHERE DATE(requested_datetime) BETWEEN (%s) AND (%s) 
             ORDER BY requested_datetime DESC Limit 6000
         """, (start_date, end_date))
+        
+        # TODO: Only return requests under the specific categories
     
-        return render_csv(res, ['service_request_id', 'status','service_code', 'requested_date','lat','lon'])
+        return render_csv(res, ['service_request_id', 'status','service_code', 'requested_date','lat','lon','neighborhood'])
+    else:
+        return create_null_response()
+        
+@app.route("/requests/neighborhood/latest", methods=['GET'])
+def get_latest_neighborhood_csv(neighborhood=None):
+    days = request.args.get("days", "60")
+    neighborhood = request.args.get("neighborhood", None)
+    if not days.isdigit():
+        raise Exception("'days' must be a number")
+
+    res = query_db("""
+        SELECT MAX(requested_datetime) AS max_date
+        FROM sf_requests
+    """)
+
+    end_date = res[0]['max_date']
+
+    start_date = end_date - timedelta(days=int(days))
+    
+    fmt = '%Y-%m-%d'
+    
+    return get_requests_by_neighborhood_date_csv('csv',neighborhood,start_date.strftime(fmt), end_date.strftime(fmt))
+
+@app.route("/requests/neighborhoods/reqs.<format>", methods=['GET'])
+def get_requests_by_neighborhood_date_csv(format=None,neighborhood=None,start_day=None, end_day=None):
+    if start_day is None:
+        start_day = request.args.get('start_day', None)
+        end_day = request.args.get('end_day', None)
+        neighborhood = request.args.get('neighborhood', None)
+        time_delta = request.args.get('time_delta', None)
+        
+    neighborhoods = {'bayview':'Bayview', 'bernal':'Bernal Heights', 'castro':'Castro/Upper Market', 'chinatown':'Chinatown', 
+    'crocker_amazon':'Crocker Amazon', 'diamond_heights':'Diamond Heights', 'downtown':'Downtown/Civic Center', 'excelsior':'Excelsior', 
+    'financial_district':'Financial District', 'glen_park':'Glen Park', 'gg_park':'Golden Gate Park', 'haight_ashbury':'Haight Ashbury',
+    'inner_richmond': 'Inner Richmond', 'inner_sunset':'Inner Sunset', 'lakeshore':'Lakeshore', 'marina':'Marina', 'mission':'Mission',
+    'nob_hill':'Nob Hill', 'noe_valley':'Noe Valley', 'north_beach':'North Beach', 'ocean_view':'Ocean View',
+    'outer_mission':'Outer Mission', 'outer_richmond':'Outer Richmond', 'outer_sunset':'Outer Sunset', 'pacific_heights':'Pacific Heights',
+    'parkside':'Parkside', 'potrero_hill':'Potrero Hill', 'presidio':'Presidio', 'presidio_heights':'Presidio Heights',
+    'russian_hill':'Russian Hill', 'seacliff':'Seacliff', 'soma':'South of Market', 
+    'ti':'Treasure Island/YBI', 'twin_peaks':'Twin Peaks', 'visitacion':'Visitacion Valley', 'west_twin_peaks':'West of Twin Peaks', 
+    'western_addition':'Western Addition'}
+    
+    if format in ('csv','tsv'):
+        if start_day:
+            print start_day, end_day
+            
+            start_date = parse_date(start_day)
+            end_date = (end_day and parse_date(end_day)) or start_date + ONE_DAY
+        elif end_day:
+            end_date = parse_date(end_day)
+            start_date = end_date - timedelta(days=int(time_delta))
+            
+        res = query_db("""
+            SELECT 
+                service_request_id,status,service_code, 
+                CAST(DATE(requested_datetime)AS text) as requested_date,lat,lon,neighborhood
+            FROM sf_requests 
+            WHERE DATE(requested_datetime) BETWEEN (%s) AND (%s) and neighborhood=(%s)
+            ORDER BY requested_datetime DESC Limit 6000
+        """, (start_date, end_date, neighborhood))
+        
+        # TODO: Only return requests under the specific categories
+    
+        return render_csv(res, ['service_request_id', 'status','service_code', 'requested_date','lat','lon','neighborhood'])
     else:
         return create_null_response()
 
@@ -725,7 +818,6 @@ def get_sr_counts_by_range():
         counts = {}
         
         for i, sr_date_count in enumerate(res):
-            #current_date = sr_date_count['r_dt']
             if sr_date_count['service_code'] in service_list:
                 if sr_date_count['r_dt'] in data:
                     current_category = service_list[sr_date_count['service_code']]
@@ -752,11 +844,173 @@ def get_sr_counts_by_range():
                     counts = {}
             
         return json.dumps(data)
+
+@app.route("/stats/neighborhood_sc_counts", methods=['GET'])
+def get_neighborhood_sc_counts_by_range():
+    days = request.args.get("days", "60")
+    
+    res = query_db("""
+        SELECT MAX(requested_datetime) AS max_date
+        FROM sf_requests
+    """)
+    
+    end_date = res[0]['max_date']
+    
+    start_date = end_date - timedelta(days=int(days))
+    
+    fmt = '%Y-%m-%d'
+    
+    start_day = start_date.strftime(fmt);
+    end_day = end_date.strftime(fmt)
+        
+    results = query_db("""
+        SELECT
+            p.neighborho as neigh, CAST(DATE(r.requested_datetime) as text) as r_dt, 
+            r.service_code as sc, COUNT(r.service_code) as count
+        FROM sf_requests as r
+        JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
+        WHERE DATE(r.requested_datetime) between (%s) and (%s) 
+        GROUP by neigh, r_dt, sc
+        ORDER by r_dt DESC
+    """, (start_date, end_date))
+    
+    neighborhoods = {'Bayview':{}, 'Bernal Heights':{}, 'Castro/Upper Market':{}, 'Chinatown':{}, 
+    'Crocker Amazon':{}, 'Diamond Heights':{}, 'Downtown/Civic Center':{}, 'Excelsior':{}, 
+    'Financial District':{}, 'Glen Park':{}, 'Golden Gate Park':{}, 'Haight Ashbury':{}, 'Inner Richmond':{}, 
+    'Inner Sunset':{}, 'Lakeshore':{}, 'Marina':{}, 'Mission':{}, 'Nob Hill':{}, 'Noe Valley':{}, 'North Beach':{}, 
+    'Ocean View':{}, 'Outer Mission':{}, 'Outer Richmond':{}, 'Outer Sunset':{}, 'Pacific Heights':{}, 'Parkside':{}, 
+    'Potrero Hill':{}, 'Presidio':{}, 'Presidio Heights':{}, 'Russian Hill':{}, 'Seacliff':{}, 'South of Market':{}, 
+    'Treasure Island/YBI':{}, 'Twin Peaks':{}, 'Visitacion Valley':{}, 'West of Twin Peaks':{}, 'Western Addition':{}}
+    
+    service_list = {"1":"Garbage","2":"Sidewalk or Street","3":"Sidewalk or Street",
+        "4":"Garbage","5":"Sidewalk or Street","6":"Trees","7":"Defacement / Graffiti",
+        "8":"Defacement / Graffiti","9":"Defacement / Graffiti","10":"Defacement / Graffiti",
+        "11":"Defacement / Graffiti","12":"Defacement / Graffiti","13":"Defacement / Graffiti",
+        "15":"Garbage","16":"Trees","17":"Sidewalk or Street","18":"Sidewalk or Street",
+        "19":"Garbage","20":"Trees","21":"Sidewalk or Street","22":"Sewage","23":"Sewage",
+        "24":"Sidewalk or Street","25":"Sidewalk or Street","26":"Sidewalk or Street","27":"Trees",
+        "29":"Defacement / Graffiti","30":"Sewage","31":"Sewage","32":"Sewage","33":"Vehicles",
+        "47":"Water","68":"Defacement / Graffiti","172":"Garbage","174":"Garbage","375":"Sidewalk or Street",
+        "376":"Sidewalk or Street","377":"Sidewalk or Street","378":"Sidewalk or Street","379":"Sidewalk or Street"}
+    
+    data = {}
+    
+    for result in results:
+        if result['r_dt'] not in data:
+            data[result['r_dt']] = {}
+        
+        if result['sc'] in service_list:
+            if result['neigh'] not in data[result['r_dt']]:
+                data[result['r_dt']][result['neigh']] = {}
+            
+            if service_list[result['sc']] in data[result['r_dt']][result['neigh']]:
+                data[result['r_dt']][result['neigh']][service_list[result['sc']]] = result['count'] + data[result['r_dt']][result['neigh']][service_list[result['sc']]]
+            else:
+                data[result['r_dt']][result['neigh']][service_list[result['sc']]] = result['count']
+
+    return json.dumps(data)
+
+@app.route("/stats/neighborhood_counts", methods=['GET'])
+def get_neighborhood_counts_by_range():
+    days = request.args.get("days", "60")
+    neighborhood = request.args.get("neighborhood", None)
+    
+    res = query_db("""
+        SELECT MAX(requested_datetime) AS max_date
+        FROM sf_requests
+    """)
+    
+    end_date = res[0]['max_date']
+
+    start_date = end_date - timedelta(days=int(days))
+    
+    fmt = '%Y-%m-%d'
+    
+    start_day = start_date.strftime(fmt);
+    end_day = end_date.strftime(fmt)
+    
+    
+    results = query_db("""
+        SELECT 
+            p.neighborho as neigh, CAST(DATE(r.requested_datetime)AS text) as r_dt, COUNT(r.service_code) AS count 
+        FROM sf_requests as r
+        JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
+        WHERE DATE(r.requested_datetime) BETWEEN (%s) AND (%s) 
+        GROUP by neigh, r_dt
+        ORDER by r_dt DESC
+    """, (start_date, end_date))
+    
+    data = {}
+    
+    #day_data = {}
+    
+    for result in results:
+        if result['r_dt'] not in data:
+            #day_data[result['neigh']] = result['count'];
+            data[result['r_dt']] = {result['neigh']:result['count']}
+        else:
+            #day_data[result['neigh']] = result['count']
+            data[result['r_dt']][result['neigh']] = result['count']
+            #data[result['r_dt']] = day_data
+    
+    return json.dumps(data)
+
+@app.route("/stats/category_counts", methods=['GET'])
+def get_category_counts_by_period():
+    """
+        Get category counts for a specified time delta
+    """
+    days = request.args.get("days", "30")
+    neighborhood = request.args.get("neighborhood", None)
+    
+    res = query_db("""
+        SELECT MAX(requested_datetime) AS max_date
+        FROM sf_requests
+    """)
+    
+    end_date = res[0]['max_date']
+
+    start_date = end_date - timedelta(days=int(days))
+    
+    if neighborhood:
+        results = query_db("""
+            SELECT 
+                r.category, COUNT(r.category) as count
+            FROM sf_requests as r
+            JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
+            WHERE DATE(r.requested_datetime) BETWEEN (%s) and (%s) and p.neighborho=(%s)
+            GROUP BY category;
+        """, (start_date,end_date,neighborhood)) 
+    else:
+        results = query_db("""
+            SELECT 
+                category, COUNT(category) as count
+            FROM sf_requests
+            WHERE DATE(requested_datetime) BETWEEN (%s) and (%s)
+            GROUP BY category;
+        """, (start_date,end_date))    
+    
+    return json.dumps(results)
     
                     
 @app.route("/dashboard/")
 def dashboard():
     return render_template('dashboard.html')
+    
+@app.route("/dashboard/<neighborhood>")
+def neighborhood_dashboard(neighborhood=None):
+    neighborhoods = {'bayview':'Bayview', 'bernal':'Bernal Heights', 'castro':'Castro/Upper Market', 'chinatown':'Chinatown', 
+    'crocker_amazon':'Crocker Amazon', 'diamond_heights':'Diamond Heights', 'downtown':'Downtown/Civic Center', 'excelsior':'Excelsior', 
+    'financial_district':'Financial District', 'glen_park':'Glen Park', 'gg_park':'Golden Gate Park', 'haight_ashbury':'Haight Ashbury',
+    'inner_richmond': 'Inner Richmond', 'inner_sunset':'Inner Sunset', 'lakeshore':'Lakeshore', 'marina':'Marina', 'mission':'Mission',
+    'nob_hill':'Nob Hill', 'noe_valley':'Noe Valley', 'north_beach':'North Beach', 'ocean_view':'Ocean View',
+    'outer_mission':'Outer Mission', 'outer_richmond':'Outer Richmond', 'outer_sunset':'Outer Sunset', 'pacific_heights':'Pacific Heights',
+    'parkside':'Parkside', 'potrero_hill':'Potrero Hill', 'presidio':'Presidio', 'presidio_heights':'Presidio Heights',
+    'russian_hill':'Russian Hill', 'seacliff':'Seacliff', 'soma':'South of Market', 
+    'ti':'Treasure Island/YBI', 'twin_peaks':'Twin Peaks', 'visitacion':'Visitacion Valley', 'west_twin_peaks':'West of Twin Peaks', 
+    'western_addition':'Western Addition'}
+        
+    return render_template('neighborhood_dashboard.html', neighborhood=str(neighborhoods[neighborhood]))
 
 @app.errorhandler(404)
 def page_not_found(e):
