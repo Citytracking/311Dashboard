@@ -13,3 +13,6 @@ create table sf_requests (
         lon                     double precision DEFAULT NULL,
         lat                     double precision DEFAULT NULL
 );
+
+ALTER TABLE sf_requests ADD COLUMN neighborhood text DEFAULT NULL;
+ALTER TABLE sf_requests ADD COLUMN category text DEFAULT NULL;
