@@ -11,6 +11,13 @@ days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sun
 
 ONE_DAY = datetime.timedelta(1)
 
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
 def load_config(filename):
     with open(filename, 'rt') as f:
         config = json.load(f)
@@ -77,9 +84,10 @@ def parse_and_store_data(response, start_date):
                         'requested_datetime', 'updated_datetime','expected_datetime', 'address', 'zipcode', 'lat', 'long'}
 
     try:
+        print 'response'
         dom = minidom.parse(response)
     except xml.parsers.expat.ExpatError:
-	print 'Expat error'
+        print 'Expat error'
         append_log('err_log.txt', 'ExpatError. Start date: ' + days[start.weekday()] + ', ' + start.strftime('%Y-%m-%d'))
         return
 
@@ -101,10 +109,20 @@ def parse_and_store_data(response, start_date):
         # Rename the long attribute
         req_obj['lon'] = req_obj['long']
         del req_obj['long']
+    
+        #print req_obj['zipcode']
+        
+        if req_obj['zipcode']:
+            if not is_number(req_obj['zipcode']):
+                req_obj['zipcode'] = None
 
-        reqs.append(req_obj)
+        if float(req_obj['lat']) > 35 and float(req_obj['lon']) < -121:
+            reqs.append(req_obj)
 
     append_log('log.txt', str(len(reqs)) + ' requests, start date: ' + start.isoformat() + ', ' + str(datetime.datetime.utcnow()) + '\n')
+    
+    #print 'reqs', reqs
+    
     update_database(reqs)
 
 def update_database(reqs):
@@ -127,26 +145,75 @@ def update_database(reqs):
     conn = psycopg2.connect(host=config['DATABASE']['host'], password=config['DATABASE']['password'], dbname=config['DATABASE']['db_name'], user=config['DATABASE']['user'])
     cur = conn.cursor()
 
+    count = 0
+    
     try:
         #http://wiki.postgresql.org/wiki/Psycopg2_Tutorial (execute many)
         for req in reqs:
+            #print req
+            #print '\n'
+            print count
+            count = count + 1
+            
             # Check to see if we have the request and it needs to be updated
-            cur.execute("""SELECT service_request_id FROM sf_requests WHERE service_request_id = %s""", (req['service_request_id'],))
+            cur.execute("SELECT service_request_id FROM sf_requests WHERE service_request_id = %s", (req['service_request_id'],))
             res = cur.fetchone()
 
             if res: # Make this test more explicit
+                print 'Updating'
+                # will update without a where always add a new result?
                 # don't update expected datetime if it is now null
                 cur.execute("""UPDATE sf_requests SET service_request_id=%(service_request_id)s, service_name=%(service_name)s, service_code=%(service_code)s,
                              description=%(description)s, status=%(status)s, lat=%(lat)s, lon=%(lon)s, requested_datetime=%(requested_datetime)s,
                              expected_datetime=%(expected_datetime)s, updated_datetime=%(updated_datetime)s, address=%(address)s, zipcode=%(zipcode)s
                              WHERE service_request_id=%(service_request_id)s""", req)
             else:
-                #print 'inserting'
+                print 'inserting'
+                #print req
+                
+                print 'Getting the neighborhood'
+                
+                cur.execute("""SELECT neighborho from pn_geoms WHERE ST_INTERSECTS(geom, ST_MakePoint((%s),(%s)))""", (req['lon'], req['lat']))
+                
+                neighborhood = cur.fetchone()
+                
+                print 'neighborhood', neighborhood
+                
+                if neighborhood:
+                    req['neighborhood'] = neighborhood[0]
+                else:
+                    req['neighborhood'] = None
+                    
+                
+                service_list = {"1":"Garbage","2":"Sidewalk or Street","3":"Sidewalk or Street",
+                    "4":"Garbage","5":"Sidewalk or Street","6":"Trees","7":"Defacement / Graffiti",
+                    "8":"Defacement / Graffiti","9":"Defacement / Graffiti","10":"Defacement / Graffiti",
+                    "11":"Defacement / Graffiti","12":"Defacement / Graffiti","13":"Defacement / Graffiti",
+                    "15":"Garbage","16":"Trees","17":"Sidewalk or Street","18":"Sidewalk or Street",
+                    "19":"Garbage","20":"Trees","21":"Sidewalk or Street","22":"Sewage","23":"Sewage",
+                    "24":"Sidewalk or Street","25":"Sidewalk or Street","26":"Sidewalk or Street","27":"Defacement/Graffiti",
+                    "29":"Defacement / Graffiti","30":"Sewage","31":"Sewage","32":"Sewage","33":"Vehicles","44":"Garbage",
+                    "47":"Water","48":"Garbage","49":"Defacement / Graffiti","68":"Defacement / Graffiti","172":"Garbage","174":"Garbage",
+                    "176":"Trees","233":"Sewage","235":"Water","307":"Sewage","313":"Sewage","314":"Sidewalk or Street",
+                    "331":"Garbage","332":"Trees","333":"Trees","336":"Trees","337":"Trees","365":"Trees","375":"Sidewalk or Street",
+                    "376":"Sidewalk or Street","377":"Sidewalk or Street","378":"Sidewalk or Street","379":"Sidewalk or Street"}
+                                
+                stripped_service_code = req['service_code'].lstrip('0')
+                
+                if stripped_service_code in service_list:
+                    category = service_list[stripped_service_code]
+                    req['category'] = category
+                else:
+                    req['category'] = None
+                    
+                print req['category']
+                
                 cur.execute(
                     """INSERT INTO sf_requests (service_request_id, service_name, service_code, description, status, lat, lon, requested_datetime,
-                        expected_datetime, updated_datetime, address, zipcode) VALUES (%(service_request_id)s, %(service_name)s, %(service_code)s,
+                        expected_datetime, updated_datetime, address, zipcode, neighborhood, category) VALUES (%(service_request_id)s, %(service_name)s, %(service_code)s,
                         %(description)s, %(status)s, %(lat)s, %(lon)s, %(requested_datetime)s, %(expected_datetime)s, %(updated_datetime)s,
-                        %(address)s, %(zipcode)s);""", req)
+                        %(address)s, %(zipcode)s, %(neighborhood)s, %(category)s);""", req)
+                        
     except psycopg2.IntegrityError:
         conn.rollback()
     except Exception as e:
@@ -164,6 +231,11 @@ if __name__ == '__main__':
 
     default_end_date = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0) - datetime.timedelta(days=1)
 
+    """
+        Edit db_config_sample.json to include the specifics about your postgres instance.
+        Rename the file to db_config.json.
+    """
+    
     defaults = {'config': 'db_config.json', 'end_date': datetime.datetime.strftime(default_end_date,'%Y-%m-%d'), 'num_of_days': 1}
 
     parser.set_defaults(**defaults)
@@ -183,7 +255,8 @@ if __name__ == '__main__':
 
         for day in xrange(num_of_days):
             print start.isoformat() + ' ' + end.isoformat()
-	    response = get_requests(start, end)
+            
+            response = get_requests(start, end)
             
             if response:
                 parse_and_store_data(response, start) # Handle Expat error, just get data for a day

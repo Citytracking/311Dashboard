@@ -1,0 +1,10 @@
+{
+	"base_url":	"https://open311.sfgov.org/Open311/v2/requests.xml",
+	
+	"DATABASE":	{
+		"host":	"localhost",
+		"user":	"USER_NAME",
+		"password":	"PASSWORD",
+		"db_name":	"DB_NAME"
+	}
+}
