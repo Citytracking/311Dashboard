@@ -218,10 +218,6 @@
     
     <script type="text/javascript" src="{{url_for('static', filename='js/leaflet-min.js') }}"></script>
 
-    
-    
-    
-    
     <script "text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.3.3/underscore-min.js"></script>
     
     <script type="text/javascript">    
@@ -303,7 +299,13 @@
                 initally_selected_neighborhood = $('#neighborhoods').val(current_neighborhood);
                 
                 // Set up the map
-                map = new L.Map('map', {minZoom: 10, maxZoom: 18, scrollWheelZoom: false, doubleClickZoom: false});
+                map = new L.Map('map', {minZoom: 10, 
+                                        maxZoom: 18, 
+                                        scrollWheelZoom: false, 
+                                        doubleClickZoom: false,
+                                        attributionControl: false
+                                });
+                
             
                 var neighborhood_lat = $('#neighborhoods').children(":selected").attr('lat');
                 var neighborhood_lon = $('#neighborhoods').children(":selected").attr('lon');
