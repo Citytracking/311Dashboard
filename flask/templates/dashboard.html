@@ -72,10 +72,10 @@
         cursor: pointer;
     }
     
-    .neighborhood_title {
+    .neighborhood_label {
         font-family: 'Helvetica Neue', Helvetica, Arial, sansserif;
-        stroke: #FFF;
-        font-size: 11px;
+        fill: #fff;
+        font-size: 13px;
     }
 
     .ui-slider {
@@ -820,11 +820,11 @@
                     var center_lat = .5*(minLat+maxLat);
                     var center_lon = .5*(minLon+maxLon);
         
-                    var proj = d3.geo.mercator().translate([.7*544600 + 60,.7*181870 - 60]).scale(.7*1600000);
+                    var proj = d3.geo.mercator().translate([.7*544600,.7*181870 - 80]).scale(.7*1600000);
                     
                     nm = d3.select("#neighborhood-map").append("svg")
                         .attr("width", 960)
-                        .attr("height", 520);
+                        .attr("height", 550);
                         
                     var path = d3.geo.path().projection(proj);
                     
@@ -852,11 +852,11 @@
                         
                         console.log(x_distance, y_distance);
                                                 
-                        var x_factor = 1;
+                        var x_factor = 1.4;
                         
-                        var y_factor = 1;
+                        var y_factor = 1.4;
                         return "translate(" + x*x_factor + "," + y*y_factor + ")"
-                            + "scale(.65)"
+                            + "scale(1)"
                             + "translate(" + -x + "," + -y + ")";
                     })
                     .style("fill", function(d) {
@@ -868,18 +868,18 @@
                         .data(p_neighborhoods.features)
                         .enter()
                         .append("text")
-                        .attr("class", "neighborhood_title")
+                        .attr("class", "neighborhood_label")
                         .attr("x", function(d) { 
                                 var centroid = path.centroid(d),
                                 x = centroid[0];
                                 
-                                return x;
+                                return 1.4*x;
                         })
                         .attr("y", function(d) {
                             var centroid = path.centroid(d),
                                 y = centroid[1];
                                 
-                                return y;
+                                return 1.4*y;
                         })
                         .attr("text-anchor", "middle")
                         .text(function(d) {
@@ -1049,7 +1049,7 @@
                 </div>
             </div>
         </div>
-        <div id="map_container" style="width: 960px; height: 520px;">
+        <div id="map_container" style="width: 960px; height: 550px;">
             <div id="neighborhood-map"></div>
             <div id="typeList" style="display: none; width: 200px; height: auto; padding: 5px; top: 50px; left: 700px; background: rgba(255,255,255,.8); position: relative; z-index: 2;">
                     <span id="ss" class="type">
