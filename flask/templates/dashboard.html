@@ -40,7 +40,7 @@
         normal; margin-bottom: 0;  
     }
     .report div {
-        width: 240px;
+        width: 280px;
         height: 60px;
         float: left; 
         font-size: 1.5em; 
@@ -95,9 +95,18 @@
         font-size: 13px;
         color: #333;
     }
-    
-    .typeList { float: right; background-color: #FFF; margin: 20px; padding: 10px; }
-    .typeList li { line-height: 1.5em; }
+        
+    #typeList {
+        display: none; 
+        width: 200px; 
+        height: auto; 
+        padding: 5px; 
+        top: 65px; 
+        left: 700px; 
+        background: rgba(255,255,255,.8); 
+        position: relative; 
+        z-index: 2;
+    }
     
     .chartArea {
       /*margin: 0px 0px 0px 10px;*/
@@ -820,7 +829,7 @@
                     var center_lat = .5*(minLat+maxLat);
                     var center_lon = .5*(minLon+maxLon);
         
-                    var proj = d3.geo.mercator().translate([.7*544600,.7*181870 - 80]).scale(.7*1600000);
+                    var proj = d3.geo.mercator().translate([.7*544600 - 20,.7*181870 - 80]).scale(.7*1600000);
                     
                     nm = d3.select("#neighborhood-map").append("svg")
                         .attr("width", 960)
@@ -1051,7 +1060,7 @@
         </div>
         <div id="map_container" style="width: 960px; height: 550px;">
             <div id="neighborhood-map"></div>
-            <div id="typeList" style="display: none; width: 200px; height: auto; padding: 5px; top: 50px; left: 700px; background: rgba(255,255,255,.8); position: relative; z-index: 2;">
+            <div id="typeList">
                     <span id="ss" class="type">
                         <span class="sr_image ss_selected">&nbsp</span>
                         <span id="ss_text" class="sr_text">Sidewalk or Street</span>
