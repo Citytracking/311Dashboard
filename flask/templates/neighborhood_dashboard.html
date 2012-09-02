@@ -50,10 +50,7 @@
         width: .6em;
         cursor: pointer;
     }
-    
-    .typeList { float: right; background-color: #FFF; margin: 20px; padding: 10px; }
-    .typeList li { line-height: 1.5em; }
-    
+        
     .chartArea {
       margin: 0px 0px 0px 10px;
       cursor: pointer;
@@ -1038,13 +1035,7 @@
     
     <body>
     <div class="dashboardCase">
-        <div class="searchBox">
-            <form>
-                <input type="text" placeholder="location or ticket #" />
-                <button>Search</button>
-            </form>
-        </div>
-        <h1> <span class="cityName">San Francisco</span> 311 Dashboard </h1>
+        {% include "header.html" %}
         <h2 id="last-updated">&nbsp</h2>
         <div class="report">
             <div>
