@@ -102,15 +102,13 @@ def get_max_date():
 # Render each page
 ###
 @app.route("/")
-@app.route("/dashboard/")
 def dashboard():
     """
         Render the main dashboard view.
     """
     return render_template('dashboard.html')
 
-@app.route("/<neighborhood>")
-@app.route("/dashboard/<neighborhood>")
+@app.route("/neighborhood/<neighborhood>")
 def neighborhood_dashboard(neighborhood=None):
     """
         Render each neighborhood view.

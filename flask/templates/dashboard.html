@@ -817,7 +817,7 @@
                         .data(p_neighborhoods.features)
                     .enter()
                     .append("a") // Add a link
-                    .attr("xlink:href", function(d) { return '/dashboard/' + neigh_conversion[d['properties']['neighborho']]})
+                    .attr("xlink:href", function(d) { return '/neighborhood/' + neigh_conversion[d['properties']['neighborho']]})
                     .append("path")
                     .attr("class","neighborhood")
                     .attr("id", function(d) {return d['properties']['neighborho'];})
