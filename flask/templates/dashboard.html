@@ -76,6 +76,7 @@
         font-family: 'Helvetica Neue', Helvetica, Arial, sansserif;
         fill: #fff;
         font-size: 13px;
+        cursor: pointer;
     }
 
     .ui-slider {
@@ -884,6 +885,8 @@
                     nm.selectAll("text")
                         .data(p_neighborhoods.features)
                         .enter()
+                        .append("a") // Add a link
+                        .attr("xlink:href", function(d) { return '/neighborhood/' + neigh_conversion[d['properties']['neighborho']]})
                         .append("text")
                         .attr("class", "neighborhood_label")
                         .attr("x", function(d) { 
