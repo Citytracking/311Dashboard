@@ -992,12 +992,12 @@
             }
             
             function createLayerGroup(requests) {
-                var layer_group = new L.LayerGroup([]);
-                //var layer_group = new L.MarkerClusterGroup(); // ***
-                
-                var marker,
+                var layer_group = new L.LayerGroup([]),
+                    marker,
                     sc;
                 
+                console.log('requests', requests);
+                                
                 for (var i=0, max=requests.length; i < max; i++) {
                     try {
                         sc = new_service_list[requests[i]['service_code']]['group'];
@@ -1023,7 +1023,8 @@
                     }
                                         
                     marker.bindPopup('<b>' + requests[i].requested_date + 
-                        '</b><br/><br/><b>Category: </b>' + sc + 
+                        '</b><br/><br/><b>Category</b>: ' + sc + 
+                        '<br/><br/><b>Service Name</b>: ' + new_service_list[requests[i]['service_code']]['service_name'] +
                         '<br/><br/><b>Status</b>: ' + requests[i].status
                         +'<br/><br/><b>Neighborhood</b>: ' + requests[i].neighborhood);
                     
