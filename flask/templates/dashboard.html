@@ -443,6 +443,7 @@
             }
             
             function setDateLabels(start_date, end_date) {
+                console.log('sdl', start_date, end_date);
                 var from_date_label = $('#from_date'),
                     to_date_label = $('#to_date'),
                     left_thumb = $($('#slider').children('.ui-slider-handle')[0]),
@@ -639,6 +640,9 @@
                     });
                     
                     $('.chart').css('display', 'block');
+                    
+                    setDateLabels(dc[dc.length-9]['date'], dc[dc.length-1]['date']);
+                    
                     $('#typeList').css('display', 'block');
                     
                     var w = 850,
