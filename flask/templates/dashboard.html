@@ -14,15 +14,39 @@
     
     .searchBox {float: right;}
     
-    .report {margin-bottom: 20px; }
-    .report select { font-size: 14px; }
-    .report h3 { font-size: 14px; color: #999; font-weight: normal; margin-bottom: 0;  }
-    .report div {width: 240px;float: left; font-size: 1.5em; color: #000; }
-    
+    .report {
+        height: 60px;
+    }
+    .report select { 
+        font-size: 14px; 
+    }
+    .report h3 { 
+        font-size: 14px; 
+        color: #999; 
+        font-weight: 
+        normal; margin-bottom: 0;  
+    }
+    .report div {
+        width: 240px;
+        height: 60px;
+        float: left; 
+        font-size: 1.5em; 
+        color: #000; 
+    }
+    /*
     .chart { clear: both; margin-top: 0px; margin-bottom: 0px; }
     .chart ul {float: right; }
     .chart li { list-style: none; margin-bottom: 20px;  color: #999; font-size: 14px; }
-    .chart .requestCount { font-weight: bold; color: #333; font-size: 1.5em; }
+    */
+    .chart {
+        position: relative;
+    }
+    
+    .chart .requestCount { 
+        font-weight: bold; 
+        color: #333; 
+        font-size: 1.5em; 
+    }
     
     #neighborhood-map {
         width: 960px; 
@@ -50,11 +74,20 @@
         cursor: pointer;
     }
     
+    .date_labels {
+        /*text-align: center;*/
+        display: inline-block;
+        width: 80px;
+        position: absolute;
+        font-size: 13px;
+        color: #333;
+    }
+    
     .typeList { float: right; background-color: #FFF; margin: 20px; padding: 10px; }
     .typeList li { line-height: 1.5em; }
     
     .chartArea {
-      margin: 0px 0px 0px 10px;
+      /*margin: 0px 0px 0px 10px;*/
       cursor: pointer;
     }
         
@@ -208,7 +241,7 @@
         
         $(function() {
             d3.json("/stats/category_counts", function(counts) {
-                var max = {'category':'','count':0}
+                var max = {'category':'','count':0},
                     min = {'category': counts[1]['category'], 'count': counts[1]['count']};
                 
                 for (var i=0, len=counts.length; i < len; i++) {
@@ -409,6 +442,21 @@
                 });
             }
             
+            function setDateLabels(start_date, end_date) {
+                var from_date_label = $('#from_date'),
+                    to_date_label = $('#to_date'),
+                    left_thumb = $($('#slider').children('.ui-slider-handle')[0]),
+                    right_thumb = $($('#slider').children('.ui-slider-handle')[1]),
+                    //thumb_width = left_thumb.width();
+                    thumb_width = 10;
+                
+                from_date_label.html(start_date);
+                from_date_label.css('left', left_thumb.position().left - from_date_label.width() - thumb_width); // width 80
+                
+                to_date_label.html(end_date);
+                to_date_label.css('left', right_thumb.position().left + thumb_width);
+            }
+            
             function resetBarColors() {
                 chart.selectAll(".open")
                     .attr("fill", function(d, i) { 
@@ -566,17 +614,23 @@
                         max: dc.length-1,
                         values: selected_range,
                         slide: function(e, ui) {
+                            if (ui.values[0] == ui.values[1]) {
+                                return false;
+                            }
+                            
                             var start = ui['values'][0],
                                 end = ui['values'][1];
                             
+                            var start_date = dc[start]['date'],
+                                end_date = dc[end]['date'];
+                            
                             selected_range = [start, end];
+                            
+                            setTimeout(function() { setDateLabels(start_date, end_date) }, 5);
                             
                             resetBarColors();
                             
-                            console.log('dc',dc[start]['date'], dc[end]['date']);
-                            
-                            //lazyLoad([dc[start]['date'], dc[end]['date']]);
-                            redraw_map([dc[start]['date'], dc[end]['date']]);
+                            redraw_map([start_date, end_date]);
                             
                             setStatusCounts();
                             
@@ -596,6 +650,8 @@
                     sf_max_open = max_open;
                     var max_closed = d3.max(daily_count, function(d) { return d.Closed; });
                     sf_max_closed = max_closed;
+                    
+                    var max = d3.max([max_open, max_closed]);
                     
                     var x = d3.scale.linear().domain([0, dc.length]).range([0, w]);
                     var x2 = d3.scale.linear().domain([0, dc.length]).range([0, w]);
@@ -628,8 +684,8 @@
                         //.delay(function(d, i) { return i / daily_count.length * 400; })
                         .delay(function(d, i) { return i * daily_count.length; })
                         .attr("fill-opacity", 1)
-                        .attr("y", function(d) { return h - 75*d.Open/max_open - .5 * h + 35; })
-                        .attr("height", function(d) { return 75*d.Open/max_open; });
+                        .attr("y", function(d) { return h - 75*d.Open/max - .5 * h + 35; })
+                        .attr("height", function(d) { return 75*d.Open/max; });
                     
                     chart.selectAll(".open")
                     .on("mouseover", function(d){
@@ -667,7 +723,7 @@
                         .delay(function(d, i) { return i * daily_count.length; })
                         .attr("fill-opacity", 1)
                         .attr("y", function(d) { return .5 * h + barPadding - 35;})
-                        .attr("height", function(d) { return 75*d.Closed/max_closed; });
+                        .attr("height", function(d) { return 75*d.Closed/max; });
                     
                     chart2.selectAll(".closed")
                     .on("mouseover", function(d){ 
@@ -927,8 +983,8 @@
                 $('#response-time').html(Math.round(data[0]['avg_response_time']) + ' Hours');
             });
             
-            draw_bar_chart("{{url_for('static', filename='daily_count.json') }}");
-            
+            //draw_bar_chart("{{url_for('static', filename='daily_count.json') }}");
+            draw_bar_chart("/daily_count");
         });
     </script>
     </head>
@@ -957,16 +1013,22 @@
                 <span id='response-time'>&nbsp;</span> 
             </div>
         </div>
-        <div class="chart" style="display: none;">
+        <div class="chart" style="display:none">
             <div id="open-chart"></div>
-            <div id="slider" style="position: relative; left: 9px; width: 850px"></div>
+            
+            <div id="slider" style="width: 860px">
+                <div class="date_labels" id="from_date"></div>
+                <div class="date_labels" id="to_date"></div>
+            </div>
+            
             <div id="closed-chart"></div>
-            <div style="float:right; position: relative; top: -177px;">
+            
+            <div style="float:right; position: relative; top: -177px; height: 140px; width: 60px;">
                 <div style="position:relative; top: 0px">
                     <span id="open-count" class="requestCount">&nbsp;</span><br /> Open
                 </div>
                 <div style="position:relative; top: 42px">
-                    <span id="closed-count" class="requestCount">#</span><br /> Closed
+                    <span id="closed-count" class="requestCount">&nbsp;</span><br /> Closed
                 </div>
             </div>
         </div>
