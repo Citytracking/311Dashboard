@@ -12,8 +12,21 @@
     h1 { margin-top: 0; font-size: 24px;  }
     h2 { font-size: 16px; color: #000; margin-bottom: 0; }
     
-    .searchBox {float: right;}
+    .searchBox {
+        float: right;
+    }
     
+    .input_text {
+        color: #555;
+        font-size: 13px;
+    }
+    
+    .search_input {
+        padding: 5px;
+        border: 1px solid #D2D2D2;
+        border-top-color: #AEAEAE;
+    }
+        
     .report {
         height: 60px;
     }
@@ -608,7 +621,7 @@
                     setStatusCounts();
                     
                     $('#slider').dragslider({
-                        animate: true,
+                        animate: false,
                         range: true,
                         rangeDrag: true,
                         min: 0,
@@ -996,9 +1009,9 @@
     <body>
     <div class="dashboardCase">
         <div class="searchBox">
-            <form>
-                <input type="text" placeholder="location or ticket #" />
-                <button>Search</button>
+            <form class="search">
+                <input type="text" class="search_input input_text" placeholder="Location or ticket #" />
+                <button class="input_text">Search</button>
             </form>
         </div>
         <h1> <span class="cityName">San Francisco</span> 311 Dashboard </h1>
