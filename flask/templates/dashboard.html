@@ -76,7 +76,7 @@
         font-family: 'Helvetica Neue', Helvetica, Arial, sansserif;
         fill: #fff;
         font-size: 13px;
-        cursor: pointer;
+        pointer-events: none;
     }
 
     .ui-slider {
@@ -89,7 +89,6 @@
     }
     
     .date_labels {
-        /*text-align: center;*/
         display: inline-block;
         width: 80px;
         position: absolute;
@@ -110,7 +109,6 @@
     }
     
     .chartArea {
-      /*margin: 0px 0px 0px 10px;*/
       cursor: pointer;
     }
         
@@ -885,8 +883,6 @@
                     nm.selectAll("text")
                         .data(p_neighborhoods.features)
                         .enter()
-                        .append("a") // Add a link
-                        .attr("xlink:href", function(d) { return '/neighborhood/' + neigh_conversion[d['properties']['neighborho']]})
                         .append("text")
                         .attr("class", "neighborhood_label")
                         .attr("x", function(d) { 
