@@ -292,6 +292,8 @@
             d3.json("{{url_for('static', filename='neighborhood_sc_counts.json') }}", function(json) {
                 neighborhood_sc_counts = json;
             });
+            
+            var format = d3.time.format('%Y-%m-%d');
                     
             var map,
                 map_requests,
@@ -302,15 +304,13 @@
                 date_range = [],
                 sf_max_open,
                 sf_max_closed,
+                selected_range,
                 dc,
-                nm;
-            
-            var layer_groups_by_date = {};
+                nm,
+                sr_counts_by_date;
             
             var markers_by_type = {'Sidewalk or Street': {}, 'Garbage': {}, 'Defacement / Graffiti': {},
                 'Sewage': {}, 'Vehicles': {}, 'Trees': {}, 'Water': {}};
-                
-            var sr_counts_by_date;
                                 
             // Handle Service Request Selection
             $('#ss').click(function() {                
@@ -450,14 +450,7 @@
                     }
                 }
             }
-            
-            var selected_range;
-                
-            var format = d3.time.format('%Y-%m-%d');
-            
-            // Cache the results
-            var requests_by_date = {};
-                            
+                                                    
             function update_statistics(path) {
                 d3.json(path, function(data) {
                     $('#response-time').html(Math.round(data[0]['avg_response_time']) + ' Hours');
