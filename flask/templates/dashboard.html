@@ -457,8 +457,11 @@
                 });
             }
             
+            function stripLeadingZeroes(str) {
+                return str.replace(/^[0]+/g,"");
+            }
+            
             function setDateLabels(start_date, end_date) {
-                console.log('sdl', start_date, end_date);
                 var from_date_label = $('#from_date'),
                     to_date_label = $('#to_date'),
                     left_thumb = $($('#slider').children('.ui-slider-handle')[0]),
@@ -466,11 +469,37 @@
                     //thumb_width = left_thumb.width();
                     thumb_width = 10;
                 
-                from_date_label.html(start_date);
+                // Format date strings
+                var start_date_arr = start_date.split('-'), ymd
+                    end_date_arr = end_date.split('-');
+                
+                formatted_start_date = [start_date_arr[1], start_date_arr[2], start_date_arr[0]]
+                    .map(stripLeadingZeroes) // This will apply stripLeadingZeroes to the year, unnecessarily.
+                    .join('/');
+                
+                formatted_end_date = [end_date_arr[1], end_date_arr[2], end_date_arr[0]]
+                    .map(stripLeadingZeroes)
+                    .join('/');
+                
+                from_date_label.html(formatted_start_date);
                 from_date_label.css('left', left_thumb.position().left - from_date_label.width() - thumb_width); // width 80
                 
-                to_date_label.html(end_date);
+                to_date_label.html(formatted_end_date);
                 to_date_label.css('left', right_thumb.position().left + thumb_width);
+            }
+            
+            function setTitleDate(date_string) {            
+                var date_arr = date_string.split('-');
+                
+                var date = new Date(date_arr[0],date_arr[1]-1,date_arr[2]);
+                
+                //var days =["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Satruday"];
+            
+                var months = ["January", "February", "March", "April", "May", "June", "July",
+                    "August", "September", "October", "November", "December"];
+                
+                    
+                $('#last-updated').html('Last updated on ' + months[date.getMonth()] + ' ' + date.getUTCDate() + ', ' + date.getFullYear());
             }
             
             function resetBarColors() {
@@ -524,20 +553,6 @@
                 });
             }
                         
-            function setTitleDate(date_string) {            
-                var date_arr = date_string.split('-');
-                
-                var date = new Date(date_arr[0],date_arr[1]-1,date_arr[2]);
-                
-                var days =["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Satruday"];
-            
-                var months = ["January", "February", "March", "April", "May", "June", "July",
-                    "August", "September", "October", "November", "December"];
-                
-                    
-                $('#last-updated').html('Last updated on ' + months[date.getMonth()] + ' ' + date.getUTCDate() + ', ' + date.getFullYear());
-            }
-            
             function setStatusCounts() {
                 //return [total_open, total_count];
                 
