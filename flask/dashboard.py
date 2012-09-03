@@ -30,8 +30,8 @@ def query_db(query, args=()):
     cur = g.db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     
     try:
-        a = cur.mogrify(query,args)
-        print a
+        #a = cur.mogrify(query,args)
+        #print a
         cur.execute(query, args)
     except psycopg2.DataError,err:
         print 'Error', err
@@ -98,6 +98,58 @@ def get_max_date():
     """)
     
     return res[0]['max_date']
+
+def combine_open_closed_counts(open_count_res, closed_count_res, start_date, end_date):
+    """
+        Combine counts of open requests and closed counts into one structure.
+        You will end up with something that looks like this:
+            
+        [{"date": "2012-06-30", "Open": 27, "Closed": 133}, 
+         {"date": "2012-07-01", "Open": 31, "Closed": 44},...]
+    """
+    
+    daily_count_res = open_count_res + closed_count_res
+    
+    sorted_daily_count = sorted(daily_count_res, key=lambda k: k['date'])
+        
+    input_exhausted = False
+    
+    date = start_date
+    
+    count = 0
+    
+    input = sorted_daily_count[count]
+    
+    next_date = start_date
+    
+    combined_result = []
+    
+    while date <= end_date:
+        info = {}
+        
+        info['date'] = datetime.strftime(date, '%Y-%m-%d')
+        info['Open'] = 0
+        info['Closed'] = 0
+        
+        while not input_exhausted and info['date'] == input['date']:
+            if input['status'] == 'Closed':
+                info['Closed'] += input['count']
+            elif input['status'] == 'Open':
+                info['Open'] += input['count']
+                
+            count = count + 1
+            
+            if count >= len(sorted_daily_count):
+                input_exhausted = True
+            else:
+                input = sorted_daily_count[count]
+        
+        date = date + timedelta(1)
+        
+        combined_result.append(info)
+    
+    return combined_result
+
 ###
 # Render each page
 ###
@@ -182,7 +234,7 @@ def daily_count():
         
         The default range is 60 days.
     """
-    days = request.args.get("days", 57)
+    days = request.args.get("days", 60)
     
     end_date = get_max_date()
     
@@ -208,112 +260,58 @@ def daily_count():
         ORDER BY date ASC
     """, (start_day, end_day))
     
-    daily_count_res = open_count_res + closed_count_res
-    
-    sorted_daily_count = sorted(daily_count_res, key=lambda k: k['date'])
-        
-    input_exhausted = False
-    
-    date = start_date
-    
-    count = 0
-    
-    input = sorted_daily_count[count]
-    
-    next_date = start_date
-    
-    results = []
-    
-    while date <= end_date:
-        info = {}
-        
-        info['date'] = datetime.strftime(date, '%Y-%m-%d')
-        info['Open'] = 0
-        info['Closed'] = 0
-        
-        while not input_exhausted and info['date'] == input['date']:
-            if input['status'] == 'Closed':
-                info['Closed'] += input['count']
-            elif input['status'] == 'Open':
-                info['Open'] += input['count']
-                
-            count = count + 1
-            
-            if count >= len(sorted_daily_count):
-                input_exhausted = True
-            else:
-                input = sorted_daily_count[count]
-        
-        date = date + timedelta(1)
-        
-        results.append(info)
-        
-    return json.dumps(results)
+    return json.dumps(combine_open_closed_counts(open_count_res, closed_count_res, 
+                                                 start_date, end_date))
     
 @app.route("/daily_count_by_neighborhood")
-def daily_count_by_neighborhood(count=None):
-    days = request.args.get("days", 60)
+def daily_count_by_neighborhood():
+    """
+        Get a daily count of service requests that were opened and closed in a particular
+        neighborhood during a range of dates.
+        
+        The default range is 60 days.
+    """
     neighborhood = request.args.get("neighborhood")
     
-    res = query_db("""
-        SELECT MAX(requested_datetime) AS max_date
-        FROM sf_requests
-    """)
-    
-    end_date = res[0]['max_date']
-    
-    start_date = end_date - timedelta(days=int(days))
-    
-    fmt_start_date = datetime.strftime(start_date, '%Y-%m-%d')
-    
-    fmt_end_date = datetime.strftime(end_date, '%Y-%m-%d')
+    if neighborhood:
+        days = request.args.get("days", 60)
         
-    daily_count_res = query_db("""
-        SELECT 
-            CAST(DATE(r.requested_datetime) as text), count(r.*), r.status
-        FROM sf_requests as r
-        JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
-        WHERE p.neighborho=(%s) AND DATE(requested_datetime) BETWEEN (%s) AND (%s)
-        GROUP BY date(r.requested_datetime), r.status order by date(r.requested_datetime) ASC
-    """, (neighborhood, fmt_start_date, fmt_end_date))
-    
-    input_exhausted = False
-    
-    date = start_date
-    
-    count = 0
-    
-    input = daily_count_res[count]
-    
-    next_date = start_date
-    
-    results = []
-    
-    while date <= end_date:
-        info = {}
+        end_date = get_max_date()
         
-        info['date'] = datetime.strftime(date, '%Y-%m-%d')
-        info['Open'] = 0
-        info['Closed'] = 0
-        
-        while not input_exhausted and info['date'] == input['date']:
-            if input['status'] == 'Closed':
-                info['Closed'] += input['count']
-            elif input['status'] == 'Open':
-                info['Open'] += input['count']
-                
-            count = count + 1
+        start_date = end_date - timedelta(days=int(days)-1)
             
-            if count >= len(daily_count_res):
-                input_exhausted = True
-            else:
-                input = daily_count_res[count]
+        start_day, end_day = get_formatted_date(start_date, end_date)
         
-        date = date + timedelta(1)
+        open_count_res = query_db("""
+            SELECT 
+                CAST(DATE(r.requested_datetime) as text) as date, COUNT(r.*), r.status
+            FROM sf_requests as r
+            JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
+            WHERE p.neighborho=(%s) AND DATE(r.requested_datetime) BETWEEN (%s) AND (%s) AND status='Open'
+            GROUP BY date, r.status
+            ORDER BY date ASC
+        """, (neighborhood, start_day, end_day))
         
-        results.append(info)
+        print 'open count', open_count_res
+        
+        if open_count_res:
+            closed_count_res = query_db("""
+                SELECT 
+                    CAST(DATE(r.requested_datetime) as text) as date, COUNT(r.*), r.status
+                FROM sf_requests as r
+                JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
+                WHERE p.neighborho=(%s) AND DATE(r.requested_datetime) BETWEEN (%s) AND (%s) AND status='Closed'
+                GROUP BY date, r.status
+                ORDER BY date ASC
+            """, (neighborhood, start_day, end_day))
             
-    return json.dumps(results)
+            return json.dumps(combine_open_closed_counts(open_count_res, 
+                                                         closed_count_res, 
+                                                         start_date, end_date))
+        else:
+            return create_null_response()
+    else:
+        return create_null_response()
 
 # Handle dates
 @app.route("/requests/daily/<start_day>..<end_day>", methods=['POST', 'GET'])
