@@ -559,7 +559,7 @@
                     setStatusCounts();
                     
                     $('#slider').dragslider({
-                        animate: true,
+                        animate: false,
                         range: true,
                         rangeDrag: true,
                         min: 0,
@@ -598,6 +598,8 @@
                     var max_closed = d3.max(daily_count, function(d) { return d.Closed; });
                     sf_max_closed = max_closed;
                     
+                    var max = d3.max([max_open, max_closed]);
+                    
                     var x = d3.scale.linear().domain([0, dc.length]).range([0, w]);
                     var x2 = d3.scale.linear().domain([0, dc.length]).range([0, w]);
                     
@@ -629,8 +631,8 @@
                         //.delay(function(d, i) { return i / daily_count.length * 400; })
                         .delay(function(d, i) { return i * daily_count.length; })
                         .attr("fill-opacity", 1)
-                        .attr("y", function(d) { return h - 75*d.Open/max_open - .5 * h + 35; })
-                        .attr("height", function(d) { return 75*d.Open/max_open; });
+                        .attr("y", function(d) { return h - 75*d.Open/max - .5 * h + 35; })
+                        .attr("height", function(d) { return 75*d.Open/max; });
                     
                     chart.selectAll(".open")
                     .on("mouseover", function(d){
@@ -670,7 +672,7 @@
                         .delay(function(d, i) { return i * daily_count.length; })
                         .attr("fill-opacity", 1)
                         .attr("y", function(d) { return .5 * h + barPadding - 35;})
-                        .attr("height", function(d) { return 75*d.Closed/max_closed; });
+                        .attr("height", function(d) { return 75*d.Closed/max; });
                     
                     chart2.selectAll(".closed")
                     .on("mouseover", function(d){ 
