@@ -67,7 +67,8 @@
                 sf_max_open,
                 sf_max_closed,
                 dc,
-                initially_selected_neighborhood;
+                initially_selected_neighborhood,
+                neighborhood_lon_offset = .004; // Adjust map center to keep neighborhood shape in the right place
             
             var neighborhood_layer_groups = {};
                         
@@ -107,10 +108,10 @@
                                 });
                 
             
-                var neighborhood_lat = $('#neighborhoods').children(":selected").attr('lat');
-                var neighborhood_lon = $('#neighborhoods').children(":selected").attr('lon');
+                var neighborhood_lat = $('#neighborhoods').children(":selected").attr('lat'),
+                    neighborhood_lon = $('#neighborhoods').children(":selected").attr('lon');
             
-                map.setView(new L.LatLng(neighborhood_lat, neighborhood_lon), 14)
+                map.setView(new L.LatLng(neighborhood_lat, parseFloat(neighborhood_lon) + neighborhood_lon_offset), 14)
                     .addLayer(new L.TileLayer('http://tile.stamen.com/toner-lite/{z}/{x}/{y}.png'));
                     
                 function doubleClickZoom(e) {
@@ -831,7 +832,7 @@
                 if (neighborhood !== 'San Francisco') {
                     var neighborhood_lat = $('#neighborhoods').children(":selected").attr('lat');
                     var neighborhood_lon = $('#neighborhoods').children(":selected").attr('lon');
-                    map.setView(new L.LatLng(neighborhood_lat, neighborhood_lon), 14);
+                    map.setView(new L.LatLng(neighborhood_lat, parseFloat(neighborhood_lon) + neighborhood_lon_offset), 14);
                 } else {
                     map.setView(new L.LatLng(37.767, -122.44), 12); // Put this center in a config
                 }
