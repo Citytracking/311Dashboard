@@ -297,10 +297,10 @@ def daily_count_by_neighborhood():
         if open_count_res:
             closed_count_res = query_db("""
                 SELECT 
-                    CAST(DATE(r.requested_datetime) as text) as date, COUNT(r.*), r.status
+                    CAST(DATE(r.updated_datetime) as text) as date, COUNT(r.*), r.status
                 FROM sf_requests as r
                 JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
-                WHERE p.neighborho=(%s) AND DATE(r.requested_datetime) BETWEEN (%s) AND (%s) AND status='Closed'
+                WHERE p.neighborho=(%s) AND DATE(r.updated_datetime) BETWEEN (%s) AND (%s) AND status='Closed'
                 GROUP BY date, r.status
                 ORDER BY date ASC
             """, (neighborhood, start_day, end_day))
