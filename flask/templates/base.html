@@ -3,7 +3,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     {% block head %}
-    <link rel="stylesheet" href="style.css" />
     <title>{% block title %}{% endblock %} - Webpage</title>
     {% endblock %}
 </head>
@@ -11,7 +10,7 @@
     <div id="content">{% block content %}{% endblock %}</div>
     <div id="footer">
         {% block footer %}
-        &copy; Copyright 2012 <a href="/">Back to home page</a>
+            <a href="/">Back to home page</a>
         {% endblock %}
     </div>
 </body>
