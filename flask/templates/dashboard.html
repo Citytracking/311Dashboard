@@ -93,7 +93,8 @@
                 selected_range,
                 dc,
                 nm,
-                sr_counts_by_date;
+                sr_counts_by_date,
+                days_to_display = 9; // The number of days to initially display
             
             var markers_by_type = {'Sidewalk or Street': {}, 'Garbage': {}, 'Defacement / Graffiti': {},
                 'Sewage': {}, 'Vehicles': {}, 'Trees': {}, 'Water': {}};
@@ -385,9 +386,10 @@
                     
                     setTitleDate(dc[dc.length-1]['date']);
                     
-                    selected_range = [dc.length-9, dc.length-1];
+                    selected_range = [dc.length-days_to_display, dc.length-1];
                     
-                    draw_map("{{url_for('static', filename='neighborhood_counts.json') }}", [dc[dc.length-9]['date'], dc[dc.length-1]['date']]);
+                    draw_map("{{url_for('static', filename='neighborhood_counts.json') }}", 
+                        [dc[dc.length-days_to_display]['date'], dc[dc.length-1]['date']]);
                     
                     //sortServiceList();
                     setStatusCounts();
@@ -426,7 +428,7 @@
                     
                     $('.chart').css('display', 'block');
                     
-                    setDateLabels(dc[dc.length-9]['date'], dc[dc.length-1]['date']);
+                    setDateLabels(dc[dc.length-days_to_display]['date'], dc[dc.length-1]['date']);
                     
                     $('#typeList').css('display', 'block');
                     

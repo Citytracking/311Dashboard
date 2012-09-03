@@ -68,6 +68,7 @@
                 sf_max_closed,
                 dc,
                 initially_selected_neighborhood,
+                days_to_display = 9, // The number of days to initially display
                 neighborhood_lon_offset = .004; // Adjust map center to keep neighborhood shape in the right place
             
             var neighborhood_layer_groups = {};
@@ -554,7 +555,7 @@
                     
                     setTitleDate(dc[dc.length-1]['date']);
                     
-                    selected_range = [dc.length-4, dc.length-1];
+                    selected_range = [dc.length-days_to_display, dc.length-1];
                     
                     //sortServiceList();
                     setStatusCounts();
@@ -591,7 +592,7 @@
                     
                     $('.chart').css('display', 'block');
                     
-                    setDateLabels(dc[dc.length-9]['date'], dc[dc.length-1]['date']);
+                    setDateLabels(dc[dc.length-days_to_display]['date'], dc[dc.length-1]['date']);
                     
                     $('#typeList').css('display', 'block');
                     
@@ -912,7 +913,7 @@
                 }
                                 
                 // Initially show 3 days
-                for (var i=initial_date_range.length-4; i < initial_date_range.length; i++) {
+                for (var i=initial_date_range.length-days_to_display; i < initial_date_range.length; i++) {
                     date_range.push(initial_date_range[i]);
                     map.addLayer(neighborhood_layer_groups[current_neighborhood][initial_date_range[i]]);
                 }        
