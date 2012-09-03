@@ -361,38 +361,7 @@
                 chart2.selectAll(".closed")
                     .attr("fill", function(d, i) { if ((i < selected_range[0]) || (i > selected_range[1])) { return "#f2f2f2" } else { return "#929292" } } );
             }
-            
-            function redraw_bar_chart(path) {
-                var w = 850,
-                    h = 100,
-                    barPadding = 1;
-                                      
-                d3.json(path, function(daily_count) {
-                    // Reset daily count
-                    dc = daily_count;
-                    
-                    var max_open = d3.max(daily_count, function(d) { return d.Open; });
-                    var max_closed = d3.max(daily_count, function(d) { return d.Closed; });
-                                    
-                    chart.selectAll(".open")
-                         .data(daily_count)
-                         .transition()
-                            .duration(400)
-                            .attr("fill-opacity", 1)
-                            .attr("y", function(d) { return h - 75*d.Open/max_open - .5 * h + 35; })
-                            .attr("height", function(d) { return 75*d.Open/max_open; });
-                    
-                    
-                    chart2.selectAll(".closed")
-                         .data(daily_count)
-                         .transition()
-                            .duration(400)
-                            .attr("fill-opacity", 1)
-                            .attr("y", function(d) { return .5 * h + barPadding - 35;})
-                            .attr("height", function(d) { return 75*d.Closed/max_closed; });
-                });
-            }
-            
+                        
             /*
             function loadRequestsPerDay(path) {
                 d3.csv(path, function(requests) {
@@ -683,6 +652,39 @@
                                       d3.select(this).classed("active", false);
                     });              
                 });            
+            }
+            
+            function redraw_bar_chart(path) {
+                var w = 850,
+                    h = 100,
+                    barPadding = 1;
+                                      
+                d3.json(path, function(daily_count) {
+                    // Reset daily count
+                    dc = daily_count;
+                    
+                    var max_open = d3.max(daily_count, function(d) { return d.Open; });
+                    var max_closed = d3.max(daily_count, function(d) { return d.Closed; });
+                    
+                    var max = d3.max([max_open, max_closed]);
+                                    
+                    chart.selectAll(".open")
+                         .data(daily_count)
+                         .transition()
+                            .duration(400)
+                            .attr("fill-opacity", 1)
+                            .attr("y", function(d) { return h - 75*d.Open/max - .5 * h + 35; })
+                            .attr("height", function(d) { return 75*d.Open/max; });
+                    
+                    
+                    chart2.selectAll(".closed")
+                         .data(daily_count)
+                         .transition()
+                            .duration(400)
+                            .attr("fill-opacity", 1)
+                            .attr("y", function(d) { return .5 * h + barPadding - 35;})
+                            .attr("height", function(d) { return 75*d.Closed/max; });
+                });
             }
             
             function changeNeighborhoodLayer(new_neighborhood) {
