@@ -4,9 +4,18 @@
 The 311 Dashboard helps you visualize and analyze 311 service request data. It is powered
 by the Open311 API.
 
+The following instructions are known to work on a machine running Ubuntu 11.10 (Oneiric).
+
 Let's create a PostGIS-enabled database and import San Francisco's neighborhood data.
 
-The following instructions are known to work on a machine running Ubuntu 11.10 (Oneiric).
+Install Dependencies
+--------------------
+1. `sudo apt-get update`
+2. `sudo apt-get install binutils gdal-bin libproj-dev postgresql-9.1-postgis postgresql-server-dev-9.1 python-psycopg2`
+3. `sudo apt-get install gdal-bin`
+4. You will also need pip if you don't have it:
+    - `sudo apt-get install python-pip`
+    - `sudo pip install --upgrade pip`
 
 Adjust access permissions
 -------------------------
@@ -17,7 +26,7 @@ Adjust access permissions
 Create postgres user
 --------------------
 1. `sudo -u postgres createuser sf_311`
-2. In the postgres database: `ALTER user sf_311 WITH password 'password';`
+2. In the postgres database: `ALTER user sf_311 WITH password 'CHOOSE_PASSWORD';`
 
 Create a 311 database with the correct user
 -------------------------------------------
@@ -27,21 +36,23 @@ Create a 311 database with the correct user
 Set up the database with a PostGIS template
 -------------------------------------------
 1. `psql -U sf_311 -d sf_311 -f /usr/share/postgresql/9.1/contrib/postgis-2.1/postgis.sql`
-2.  `psql -U sf_311 -d sf_311 -f /usr/share/postgresql/9.1/contrib/postgis-2.1/spatial_ref_sys.sql`
+2. `psql -U sf_311 -d sf_311 -f /usr/share/postgresql/9.1/contrib/postgis-2.1/spatial_ref_sys.sql`
 
 Get the neighborhood data
 -------------------------
 1. Download the neighborhood shapes from San Francisco here:
 
     http://apps.sfgov.org/datafiles/view.php?file=sfgis/planning_neighborhoods.zip
+    
 2. Unzip planning_neighborhoods.zip
 
 Convert the shapefile to web mercator
 -------------------------------------
 0. `ogrinfo -so planning_neighborhoods.shp`
-1. `ogr2ogr -t_srs EPSG:900913 planning_neighborhoods_900913.shp planning_neighborhoods.shp`
-2. `ogr2ogr -f 'ESRI Shapefile' -t_srs EPSG:4326 planning_neighborhoods_4326.shp planning_neighborhoods.shp`
+1. `ogr2ogr -f 'ESRI Shapefile' -t_srs EPSG:900913 planning_neighborhoods_900913.shp planning_neighborhoods.shp`
 
 Import the Shapefile into a PostGIS-enabled database
 ----------------------------------------------------
 1. `shp2pgsql -dID -s 900913 -W latin1 planning_neighborhoods_900913.shp pn_geoms | psql -U sf_311`
+
+Let's create a table for all of our 311 request data (to be continued)
