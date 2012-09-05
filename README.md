@@ -55,4 +55,15 @@ Import the Shapefile into a PostGIS-enabled database
 ----------------------------------------------------
 1. `shp2pgsql -dID -s 900913 -W latin1 planning_neighborhoods_900913.shp pn_geoms | psql -U sf_311`
 
-Let's create a table for all of our 311 request data (to be continued)
+Let's create a table for all of our 311 request data and populate the table.
+
+Create requests table
+---------------------
+1. Run the db_setup shell script: `sh db_setup.sh`
+
+Populate requests table
+-----------------------
+2. Edit the db_config_sample.json to reflect the host, user, password, and database name 
+of your setup
+3. Initially, try to get the last two week's worth of data with the update_postgres_sf.py script.
+If today's date is August 1st, 2013, run `python update_postgres_sf.py -e 2013-08-01 -n 14`
