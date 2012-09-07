@@ -400,7 +400,7 @@ def avg_resp_time():
     
     end_date = res[0]['max_date']
 
-    start_date = end_date - timedelta(days=int(7))
+    start_date = end_date - timedelta(days=int(30))
     
     fmt = '%Y-%m-%d'
     
@@ -416,6 +416,8 @@ def avg_resp_time():
             ON ST_INTERSECTS(geom, ST_GeomFromText('POINT(' || r.lon || ' ' || r.lat || ')'))
             WHERE p.neighborho=(%s) AND r.status='Closed' AND r.requested_datetime BETWEEN (%s) and (%s)
         """, (neighborhood,start_date,end_date))
+        
+        print 'res', res
                 
         return json.dumps(res)
     else:
