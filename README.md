@@ -16,6 +16,9 @@ Install Dependencies
 4. You will also need pip if you don't have it:
     - `sudo apt-get install python-pip`
     - `sudo pip install --upgrade pip`
+5. Install the python dependencies:
+    - `sudo pip install Flask`
+    - `sudo pip install psycopg2`
 
 Adjust access permissions
 -------------------------
@@ -67,3 +70,4 @@ Populate requests table
 of your setup
 3. Initially, try to get the last two week's worth of data with the update_postgres_sf.py script.
 If today's date is August 1st, 2013, run `python update_postgres_sf.py -e 2013-08-01 -n 14`
+4. Remember that you can use this same script to update the data in the future.
