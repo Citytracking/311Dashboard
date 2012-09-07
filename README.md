@@ -66,8 +66,15 @@ Create requests table
 
 Populate requests table
 -----------------------
-2. Edit the db_config_sample.json to reflect the host, user, password, and database name 
+1. Edit the db_config_sample.json to reflect the host, user, password, and database name 
 of your setup
-3. Initially, try to get the last two week's worth of data with the update_postgres_sf.py script.
+2. Initially, try to get the last two week's worth of data with the update_postgres_sf.py script.
 If today's date is August 1st, 2013, run `python update_postgres_sf.py -e 2013-08-01 -n 14`
-4. Remember that you can use this same script to update the data in the future.
+3. Remember that you can use this same script to update the data in the future.
+
+Run the application
+-------------------
+1. You can find the core of the application, dashboard.py, in the flask directory.
+Once you're in the flask directory, simply type `sudo python dashboard.py --port 80`
+
+If you wanted to run the application on port 5000, you can type `python dashboard.py --port 5000`
