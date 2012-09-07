@@ -70,10 +70,6 @@
                 // Least Requests over 30 days
                 $('#least-requests').html(min['category']);
             });
-        
-            d3.json("{{url_for('static', filename='planning_neighborhoods.json') }}", function(json) {
-                p_neighborhoods = json;
-            });
             
             d3.json("{{url_for('static', filename='neighborhood_sc_counts.json') }}", function(json) {
                 neighborhood_sc_counts = json;
@@ -292,7 +288,7 @@
             function resetBarColors() {
                 chart.selectAll(".open")
                     .attr("fill", function(d, i) { 
-                        if ((i < selected_range[0]) || (i > selected_range[1])) { 
+                        if ((i-1 < selected_range[0]) || (i > selected_range[1])) { 
                             return "#f2f2f2" 
                         } else { 
                             return "#cacaca" 
@@ -301,7 +297,7 @@
                 
                 chart2.selectAll(".closed")
                     .attr("fill", function(d, i) { 
-                        if ((i < selected_range[0]) || (i > selected_range[1])) { 
+                        if ((i-1 < selected_range[0]) || (i > selected_range[1])) { 
                             return "#f2f2f2" 
                         } else { 
                             return "#929292" 
@@ -462,7 +458,7 @@
                       //.attr("xlink:href", function(d) { return '/daily/' + d.date})
                       .append("rect")
                       .attr("class", "open")
-                      .attr("fill", function(d, i) { if (i < selected_range[0]) { return "#f2f2f2" } else { return "#cacaca" } } )
+                      .attr("fill", function(d, i) { if (i-1 < selected_range[0]) { return "#f2f2f2" } else { return "#cacaca" } } )
                       .attr("x", function(d, i) {
                           return i * (w / daily_count.length);
                       })
@@ -501,7 +497,7 @@
                       //.attr("xlink:href", function(d) { return '/daily/' + d.date})
                       .append("rect")
                       .attr("class", "closed")
-                      .attr("fill", function(d, i) { if (i < selected_range[0]) { return "#f2f2f2" } else { return "#929292" } } )
+                      .attr("fill", function(d, i) { if (i-1 < selected_range[0]) { return "#f2f2f2" } else { return "#929292" } } )
                       .attr("x", function(d, i) {
                                   return i * (w / daily_count.length);
                       })
@@ -526,175 +522,144 @@
                     });              
                 });            
             }
-            
-            /*
-            function redraw_bar_chart(path) {
-                var w = 850,
-                    h = 100,
-                    barPadding = 1;
-                                      
-                d3.json(path, function(daily_count) {
-                    // Reset daily count
-                    dc = daily_count;
-                    
-                    var max_open = d3.max(daily_count, function(d) { return d.Open; });
-                    var max_closed = d3.max(daily_count, function(d) { return d.Closed; });
-                    
-                    var max = d3.max([max_open, max_closed]);
-                                    
-                    chart.selectAll(".open")
-                         .data(daily_count)
-                         .transition()
-                            .duration(400)
-                            .attr("fill-opacity", 1)
-                            .attr("y", function(d) { return h - 75*d.Open/max - .5 * h + 35; })
-                            .attr("height", function(d) { return 75*d.Open/max; });
-                    
-                    
-                    chart2.selectAll(".closed")
-                         .data(daily_count)
-                         .transition()
-                            .duration(400)
-                            .attr("fill-opacity", 1)
-                            .attr("y", function(d) { return .5 * h + barPadding - 35;})
-                            .attr("height", function(d) { return 75*d.Closed/max; });
-                });
-            }
-            */
-            
+                        
             function draw_map(path, range) {
-                d3.json(path, function(ncounts) {
-                    neighborhood_counts = ncounts;
+                d3.json("{{url_for('static', filename='planning_neighborhoods.json') }}", function(json) {
+                    p_neighborhoods = json;
                     
-                    var neigh_conversion = {'Inner Richmond': 'inner_richmond', 'Financial District': 'financial_district', 
-                    'Castro/Upper Market': 'castro', 'Glen Park': 'glen_park', 'Western Addition': 'western_addition', 
-                    'Outer Richmond': 'outer_richmond', 'Parkside': 'parkside', 'Presidio Heights': 'presidio_heights', 
-                    'Bernal Heights': 'bernal', 'Golden Gate Park': 'gg_park', 'Lakeshore': 'lakeshore', 'Potrero Hill': 'potrero_hill', 
-                    'Pacific Heights': 'pacific_heights', 'Excelsior': 'excelsior', 'Visitacion Valley': 'visitacion', 'Marina': 'marina', 
-                    'Nob Hill': 'nob_hill', 'South of Market': 'soma', 'Chinatown': 'chinatown', 'Diamond Heights': 'diamond_heights', 
-                    'West of Twin Peaks': 'west_twin_peaks', 'Noe Valley': 'noe_valley', 'North Beach': 'north_beach', 
-                    'Crocker Amazon': 'crocker_amazon', 'Haight Ashbury': 'haight_ashbury', 'Outer Sunset': 'outer_sunset', 
-                    'Bayview': 'bayview', 'Ocean View': 'ocean_view', 'Seacliff': 'seacliff', 'Treasure Island/YBI': 'ti', 
-                    'Downtown/Civic Center': 'downtown', 'Presidio': 'presidio', 'Mission': 'mission', 'Inner Sunset': 'inner_sunset', 
-                    'Russian Hill': 'russian_hill', 'Outer Mission': 'outer_mission', 'Twin Peaks': 'twin_peaks'};
-                                        
-                    var counts_by_n = {"Bayview":0, "Bernal Heights":0, "Castro/Upper Market":0, "Chinatown":0, "Crocker Amazon":0, 
-                        "Diamond Heights":0, "Downtown/Civic Center":0, "Excelsior":0, "Financial District":0, "Glen Park":0, 
-                        "Golden Gate Park":0, "Haight Ashbury":0, "Inner Richmond":0, "Inner Sunset":0, "Lakeshore":0, "Marina":0, 
-                        "Mission":0, "Nob Hill":0, "Noe Valley":0, "North Beach":0, "Ocean View":0, "Outer Mission":0, "Outer Richmond":0, 
-                        "Outer Sunset":0, "Pacific Heights":0, "Parkside":0, "Potrero Hill":0, "Presidio":0, "Presidio Heights":0, 
-                        "Russian Hill":0, "Seacliff":0, "South of Market":0, "Treasure Island/YBI":0, "Twin Peaks":0, "Visitacion Valley":0, 
-                        "West of Twin Peaks":0, "Western Addition":0};
-                    
-                    var start_day = range[0],
-                        sd_arr = start_day.split('-'), // Might want to change this, parse date
-                        end_day = range[1],
-                        ed_arr = end_day.split('-');
-                    
-                    var start_date = new Date(sd_arr[0],sd_arr[1]-1, sd_arr[2],"0"),
-                        end_date = new Date(ed_arr[0],ed_arr[1]-1, ed_arr[2],"1");
-                    
-                    var new_date_range = d3.time.day.range(start_date, end_date, 1).map(format);
-                    
-                    for (var i=0, max=new_date_range.length; i < max; i++) {
-                        for (var neighborhood in neighborhood_counts[new_date_range[i]]){
-                            counts_by_n[neighborhood] = counts_by_n[neighborhood] + neighborhood_counts[new_date_range[i]][neighborhood];
-                        } 
-                    }
-                    
-                    var minLat = p_neighborhoods.features[0]['geometry']['coordinates'][0][0][1],
-                        minLon = p_neighborhoods.features[0]['geometry']['coordinates'][0][0][0],
-                        maxLat = p_neighborhoods.features[0]['geometry']['coordinates'][0][0][1],
-                        maxLon = p_neighborhoods.features[0]['geometry']['coordinates'][0][0][0];
-        
-                    for (var i=0; i < p_neighborhoods.features.length; i++) {
-                        for (var j=0; j < p_neighborhoods.features[i]['geometry']['coordinates'][0].length; j++) {
-                            var lon = p_neighborhoods.features[i]['geometry']['coordinates'][0][j][0];
-                            var lat = p_neighborhoods.features[i]['geometry']['coordinates'][0][j][1];
+                    d3.json(path, function(ncounts) {
+                        neighborhood_counts = ncounts;
+                        
+                        var neigh_conversion = {'Inner Richmond': 'inner_richmond', 'Financial District': 'financial_district', 
+                        'Castro/Upper Market': 'castro', 'Glen Park': 'glen_park', 'Western Addition': 'western_addition', 
+                        'Outer Richmond': 'outer_richmond', 'Parkside': 'parkside', 'Presidio Heights': 'presidio_heights', 
+                        'Bernal Heights': 'bernal', 'Golden Gate Park': 'gg_park', 'Lakeshore': 'lakeshore', 'Potrero Hill': 'potrero_hill', 
+                        'Pacific Heights': 'pacific_heights', 'Excelsior': 'excelsior', 'Visitacion Valley': 'visitacion', 'Marina': 'marina', 
+                        'Nob Hill': 'nob_hill', 'South of Market': 'soma', 'Chinatown': 'chinatown', 'Diamond Heights': 'diamond_heights', 
+                        'West of Twin Peaks': 'west_twin_peaks', 'Noe Valley': 'noe_valley', 'North Beach': 'north_beach', 
+                        'Crocker Amazon': 'crocker_amazon', 'Haight Ashbury': 'haight_ashbury', 'Outer Sunset': 'outer_sunset', 
+                        'Bayview': 'bayview', 'Ocean View': 'ocean_view', 'Seacliff': 'seacliff', 'Treasure Island/YBI': 'ti', 
+                        'Downtown/Civic Center': 'downtown', 'Presidio': 'presidio', 'Mission': 'mission', 'Inner Sunset': 'inner_sunset', 
+                        'Russian Hill': 'russian_hill', 'Outer Mission': 'outer_mission', 'Twin Peaks': 'twin_peaks'};
+                                            
+                        var counts_by_n = {"Bayview":0, "Bernal Heights":0, "Castro/Upper Market":0, "Chinatown":0, "Crocker Amazon":0, 
+                            "Diamond Heights":0, "Downtown/Civic Center":0, "Excelsior":0, "Financial District":0, "Glen Park":0, 
+                            "Golden Gate Park":0, "Haight Ashbury":0, "Inner Richmond":0, "Inner Sunset":0, "Lakeshore":0, "Marina":0, 
+                            "Mission":0, "Nob Hill":0, "Noe Valley":0, "North Beach":0, "Ocean View":0, "Outer Mission":0, "Outer Richmond":0, 
+                            "Outer Sunset":0, "Pacific Heights":0, "Parkside":0, "Potrero Hill":0, "Presidio":0, "Presidio Heights":0, 
+                            "Russian Hill":0, "Seacliff":0, "South of Market":0, "Treasure Island/YBI":0, "Twin Peaks":0, "Visitacion Valley":0, 
+                            "West of Twin Peaks":0, "Western Addition":0};
+                        
+                        var start_day = range[0],
+                            sd_arr = start_day.split('-'), // Might want to change this, parse date
+                            end_day = range[1],
+                            ed_arr = end_day.split('-');
+                        
+                        var start_date = new Date(sd_arr[0],sd_arr[1]-1, sd_arr[2],"0"),
+                            end_date = new Date(ed_arr[0],ed_arr[1]-1, ed_arr[2],"1");
+                        
+                        var new_date_range = d3.time.day.range(start_date, end_date, 1).map(format);
+                        
+                        for (var i=0, max=new_date_range.length; i < max; i++) {
+                            for (var neighborhood in neighborhood_counts[new_date_range[i]]){
+                                counts_by_n[neighborhood] = counts_by_n[neighborhood] + neighborhood_counts[new_date_range[i]][neighborhood];
+                            } 
+                        }
+                        
+                        var minLat = p_neighborhoods.features[0]['geometry']['coordinates'][0][0][1],
+                            minLon = p_neighborhoods.features[0]['geometry']['coordinates'][0][0][0],
+                            maxLat = p_neighborhoods.features[0]['geometry']['coordinates'][0][0][1],
+                            maxLon = p_neighborhoods.features[0]['geometry']['coordinates'][0][0][0];
             
-                            if (minLon > lon) {
-                                minLon = lon;
-                            } else if (lon > maxLon) {
-                                maxLon = lon;
-                            }
-                            
-                            if (minLat > lat) {
-                                minLat = lat; 
-                            } else if (lat > maxLat) {
-                                maxLat = lat;
+                        for (var i=0; i < p_neighborhoods.features.length; i++) {
+                            for (var j=0; j < p_neighborhoods.features[i]['geometry']['coordinates'][0].length; j++) {
+                                var lon = p_neighborhoods.features[i]['geometry']['coordinates'][0][j][0];
+                                var lat = p_neighborhoods.features[i]['geometry']['coordinates'][0][j][1];
+                
+                                if (minLon > lon) {
+                                    minLon = lon;
+                                } else if (lon > maxLon) {
+                                    maxLon = lon;
+                                }
+                                
+                                if (minLat > lat) {
+                                    minLat = lat; 
+                                } else if (lat > maxLat) {
+                                    maxLat = lat;
+                                }
                             }
                         }
-                    }
-                    
-                    var center_lat = .5*(minLat+maxLat);
-                    var center_lon = .5*(minLon+maxLon);
-        
-                    var proj = d3.geo.mercator().translate([.7*544600 - 20,.7*181870 - 80]).scale(.7*1600000);
-                    
-                    nm = d3.select("#neighborhood-map").append("svg")
-                        .attr("width", 960)
-                        .attr("height", 550);
                         
-                    var path = d3.geo.path().projection(proj);
-                    
-                    var center = proj([center_lon, center_lat]);
-                    
-                    nm.selectAll("path")
-                        .data(p_neighborhoods.features)
-                    .enter()
-                    .append("a") // Add a link
-                    .attr("xlink:href", function(d) { return '/neighborhood/' + neigh_conversion[d['properties']['neighborho']]})
-                    .append("path")
-                    .attr("class","neighborhood")
-                    .attr("id", function(d) {return d['properties']['neighborho'];})
-                    .on("mouseover", function(d) { console.log("over", d['properties']['neighborho']); d3.select(this).style("stroke", "#050505") })
-                    .on("mouseout", function() { d3.select(this).style("stroke", "white" )})
-                    .attr("d", path)
-                    .attr("transform", function(d) {
-                        var centroid = path.centroid(d),
-                            x = centroid[0],
-                            y = centroid[1];
-                                                    
-                        var x_distance = Math.abs(center[0] - x);
+                        var center_lat = .5*(minLat+maxLat);
+                        var center_lon = .5*(minLon+maxLon);
+            
+                        var proj = d3.geo.mercator().translate([.7*544600 - 20,.7*181870 - 80]).scale(.7*1600000);
                         
-                        var y_distance = Math.abs(center[1] - y);
+                        nm = d3.select("#neighborhood-map").append("svg")
+                            .attr("width", 960)
+                            .attr("height", 550);
+                            
+                        var path = d3.geo.path().projection(proj);
                         
-                        console.log(x_distance, y_distance);
-                                                
-                        var x_factor = 1.4;
+                        var center = proj([center_lon, center_lat]);
                         
-                        var y_factor = 1.4;
-                        return "translate(" + x*x_factor + "," + y*y_factor + ")"
-                            + "scale(1)"
-                            + "translate(" + -x + "," + -y + ")";
-                    })
-                    .style("fill", function(d) {
-                        //console.log(color(counts_by_n[d['properties']['neighborho']]));
-                        return color(counts_by_n[d['properties']['neighborho']]); 
-                    })
-                    
-                    nm.selectAll("text")
-                        .data(p_neighborhoods.features)
+                        nm.selectAll("path")
+                            .data(p_neighborhoods.features)
                         .enter()
-                        .append("text")
-                        .attr("class", "neighborhood_label")
-                        .attr("x", function(d) { 
-                                var centroid = path.centroid(d),
-                                x = centroid[0];
-                                
-                                return 1.4*x;
-                        })
-                        .attr("y", function(d) {
+                        .append("a") // Add a link
+                        .attr("xlink:href", function(d) { return '/neighborhood/' + neigh_conversion[d['properties']['neighborho']]})
+                        .append("path")
+                        .attr("class","neighborhood")
+                        .attr("id", function(d) {return d['properties']['neighborho'];})
+                        .on("mouseover", function(d) { console.log("over", d['properties']['neighborho']); d3.select(this).style("stroke", "#050505") })
+                        .on("mouseout", function() { d3.select(this).style("stroke", "white" )})
+                        .attr("d", path)
+                        .attr("transform", function(d) {
                             var centroid = path.centroid(d),
+                                x = centroid[0],
                                 y = centroid[1];
-                                
-                                return 1.4*y;
+                                                        
+                            var x_distance = Math.abs(center[0] - x);
+                            
+                            var y_distance = Math.abs(center[1] - y);
+                            
+                            console.log(x_distance, y_distance);
+                                                    
+                            var x_factor = 1.4;
+                            
+                            var y_factor = 1.4;
+                            return "translate(" + x*x_factor + "," + y*y_factor + ")"
+                                + "scale(1)"
+                                + "translate(" + -x + "," + -y + ")";
                         })
-                        .attr("text-anchor", "middle")
-                        .text(function(d) {
-                            return counts_by_n[d['properties']['neighborho']];
-                        });
+                        .style("fill", function(d) {
+                            //console.log(color(counts_by_n[d['properties']['neighborho']]));
+                            return color(counts_by_n[d['properties']['neighborho']]); 
+                        })
                         
+                        nm.selectAll("text")
+                            .data(p_neighborhoods.features)
+                            .enter()
+                            .append("text")
+                            .attr("class", "neighborhood_label")
+                            .attr("x", function(d) { 
+                                    var centroid = path.centroid(d),
+                                    x = centroid[0];
+                                    
+                                    return 1.4*x;
+                            })
+                            .attr("y", function(d) {
+                                var centroid = path.centroid(d),
+                                    y = centroid[1];
+                                    
+                                    return 1.4*y;
+                            })
+                            .attr("text-anchor", "middle")
+                            .text(function(d) {
+                                return counts_by_n[d['properties']['neighborho']];
+                            });
+                            
+                    });
                 });
             }
                         
@@ -773,7 +738,7 @@
                 }
                 
                 changeNeighborhood();
-                redraw_bar_chart(bar_path);
+                //redraw_bar_chart(bar_path);
                 update_statistics(stats_path);
             }
                     
