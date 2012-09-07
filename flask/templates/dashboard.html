@@ -71,7 +71,14 @@
                 $('#least-requests').html(min['category']);
             });
             
+            /*
+            // Static
             d3.json("{{url_for('static', filename='neighborhood_sc_counts.json') }}", function(json) {
+                neighborhood_sc_counts = json;
+            });
+            */
+            
+            d3.json("/stats/neighborhood_sc_counts", function(json) {
                 neighborhood_sc_counts = json;
             });
             
@@ -384,8 +391,15 @@
                     
                     selected_range = [dc.length-days_to_display, dc.length-1];
                     
+                    /*
+                    //Static
                     draw_map("{{url_for('static', filename='neighborhood_counts.json') }}", 
                         [dc[dc.length-days_to_display]['date'], dc[dc.length-1]['date']]);
+                    */
+                    
+                    draw_map("/stats/neighborhood_counts", 
+                        [dc[dc.length-days_to_display]['date'], dc[dc.length-1]['date']]);
+                    
                     
                     //sortServiceList();
                     setStatusCounts();
@@ -727,48 +741,6 @@
                     });
             }
                         
-            function changeViews() {
-                var bar_path = "{{url_for('static', filename='planning_neighborhoods.json') }}";
-                var stats_path = '/avg_resp_time';
-                
-                /* Generalize this for other cities */
-                if ($('#neighborhoods').val() != 'San Francisco') {
-                    bar_path = bar_path + '_by_neighborhood?neighborhood=' + $('#neighborhoods').val();
-                    stats_path = stats_path + '?neighborhood=' + $('#neighborhoods').val();
-                }
-                
-                changeNeighborhood();
-                //redraw_bar_chart(bar_path);
-                update_statistics(stats_path);
-            }
-                    
-            function changeNeighborhood() {
-                var neighborhood = $('#neighborhoods').val();
-                
-                if (neighborhood !== 'San Francisco') {
-                    var neighborhood_lat = $('#neighborhoods').children(":selected").attr('lat');
-                    var neighborhood_lon = $('#neighborhoods').children(":selected").attr('lon');
-                    map.setView(new L.LatLng(neighborhood_lat, neighborhood_lon), 14);
-                } else {
-                    map.setView(new L.LatLng(37.767, -122.44), 12); // Put this center in a config
-                }
-            }
-                              
-            // Set up neighborhoods dropdown
-            
-            d3.csv("{{url_for('static', filename='js/neighborhood_list.csv')}}", function(neighborhoods) {
-                for (var i = 0, max = neighborhoods.length; i < max; i++) {
-                    $('#neighborhoods')
-                        .append($("<option></option")
-                        .attr("value", neighborhoods[i]['neighborhood'])
-                        .attr("lat", neighborhoods[i]['lat'])
-                        .attr("lon", neighborhoods[i]['lon'])
-                        .text(neighborhoods[i]['neighborhood']));   
-                }
-                
-                $('#neighborhoods').change(changeViews);
-            });
-            
             // Average Response Time
             d3.json('/avg_resp_time', function(data) {
                 $('#response-time').html(Math.round(data[0]['avg_response_time']) + ' Hours');
