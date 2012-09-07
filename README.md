@@ -77,4 +77,4 @@ Run the application
 1. You can find the core of the application, dashboard.py, in the flask directory.
 Once you're in the flask directory, simply type `sudo python dashboard.py --port 80`
 
-If you wanted to run the application on port 5000, you can type `python dashboard.py --port 5000`
+    If you want to run the application on port 5000, you can type `python dashboard.py --port 5000`
