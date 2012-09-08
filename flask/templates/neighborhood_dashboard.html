@@ -911,12 +911,15 @@
                         neighborhood_layer_groups[current_neighborhood][date] = layer_group_by_date;
                     }
                 }
-                                
-                // Initially show 3 days
+                
+                /*
                 for (var i=initial_date_range.length-days_to_display; i < initial_date_range.length; i++) {
                     date_range.push(initial_date_range[i]);
                     map.addLayer(neighborhood_layer_groups[current_neighborhood][initial_date_range[i]]);
-                }        
+                } 
+                */
+                
+                resetMap([dc[selected_range[0]]['date'], dc[selected_range[1]]['date']]);
             });
         });
     </script>
