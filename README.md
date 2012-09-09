@@ -19,6 +19,9 @@ Install Dependencies
 5. Install the python dependencies:
     - `sudo pip install Flask`
     - `sudo pip install psycopg2`
+6. If you want to use Memcached with this application:
+    - `sudo apt-get install memcached`
+    - `sudo pip install python-memcached`
 
 Adjust access permissions
 -------------------------
