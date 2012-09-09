@@ -12,6 +12,15 @@ ONE_DAY = timedelta(days=1)
 app = Flask(__name__)
 app.config.from_object(__name__)
 
+# Set up Memcache
+USE_MEMCACHE = False
+
+if USE_MEMCACHE:
+    from werkzeug.contrib.cache import MemcachedCache
+    cache = MemcachedCache(['127.0.0.1:11211'])
+    
+    CACHE_TIMEOUT = 300
+
 def connect_db():
     return psycopg2.connect("host=localhost password=77 dbname=sf_311 user=sf_311")
 
@@ -51,7 +60,6 @@ def create_json(attrs, res):
     requests = []
 
     for row in res:
-        # http://stackoverflow.com/questions/51553/why-are-sql-aggregate-functions-so-much-slower-than-python-and-java-or-poor-man
         requests.append(dict(zip(attrs,row)))
 
     return json.dumps(requests)
@@ -150,6 +158,47 @@ def combine_open_closed_counts(open_count_res, closed_count_res, start_date, end
     
     return combined_result
 
+def convert_neighborhood_slug(slug):
+    neighborhoods = {'bayview':'Bayview',
+                 'bernal':'Bernal Heights', 
+                 'castro':'Castro/Upper Market',
+                 'chinatown':'Chinatown',
+                 'crocker_amazon':'Crocker Amazon', 
+                 'diamond_heights':'Diamond Heights', 
+                 'downtown':'Downtown/Civic Center', 
+                 'excelsior':'Excelsior', 
+                 'financial_district':'Financial District', 
+                 'glen_park':'Glen Park', 
+                 'gg_park':'Golden Gate Park', 
+                 'haight_ashbury':'Haight Ashbury',
+                 'inner_richmond': 'Inner Richmond', 
+                 'inner_sunset':'Inner Sunset', 
+                 'lakeshore':'Lakeshore', 
+                 'marina':'Marina', 
+                 'mission':'Mission',
+                 'nob_hill':'Nob Hill', 
+                 'noe_valley':'Noe Valley', 
+                 'north_beach':'North Beach', 
+                 'ocean_view':'Ocean View',
+                 'outer_mission':'Outer Mission', 
+                 'outer_richmond':'Outer Richmond', 
+                 'outer_sunset':'Outer Sunset', 
+                 'pacific_heights':'Pacific Heights',
+                 'parkside':'Parkside', 
+                 'potrero_hill':'Potrero Hill', 
+                 'presidio':'Presidio', 
+                 'presidio_heights':'Presidio Heights',
+                 'russian_hill':'Russian Hill', 
+                 'seacliff':'Seacliff', 
+                 'soma':'South of Market', 
+                 'ti':'Treasure Island/YBI', 
+                 'twin_peaks':'Twin Peaks',
+                 'visitacion':'Visitacion Valley', 
+                 'west_twin_peaks':'West of Twin Peaks', 
+                 'western_addition':'Western Addition'}
+                 
+    return neighborhoods[slug]
+
 ###
 # Render each page
 ###
@@ -165,18 +214,8 @@ def neighborhood_dashboard(neighborhood=None):
     """
         Render each neighborhood view.
     """
-    neighborhoods = {'bayview':'Bayview', 'bernal':'Bernal Heights', 'castro':'Castro/Upper Market', 'chinatown':'Chinatown', 
-    'crocker_amazon':'Crocker Amazon', 'diamond_heights':'Diamond Heights', 'downtown':'Downtown/Civic Center', 'excelsior':'Excelsior', 
-    'financial_district':'Financial District', 'glen_park':'Glen Park', 'gg_park':'Golden Gate Park', 'haight_ashbury':'Haight Ashbury',
-    'inner_richmond': 'Inner Richmond', 'inner_sunset':'Inner Sunset', 'lakeshore':'Lakeshore', 'marina':'Marina', 'mission':'Mission',
-    'nob_hill':'Nob Hill', 'noe_valley':'Noe Valley', 'north_beach':'North Beach', 'ocean_view':'Ocean View',
-    'outer_mission':'Outer Mission', 'outer_richmond':'Outer Richmond', 'outer_sunset':'Outer Sunset', 'pacific_heights':'Pacific Heights',
-    'parkside':'Parkside', 'potrero_hill':'Potrero Hill', 'presidio':'Presidio', 'presidio_heights':'Presidio Heights',
-    'russian_hill':'Russian Hill', 'seacliff':'Seacliff', 'soma':'South of Market', 
-    'ti':'Treasure Island/YBI', 'twin_peaks':'Twin Peaks', 'visitacion':'Visitacion Valley', 'west_twin_peaks':'West of Twin Peaks', 
-    'western_addition':'Western Addition'}
-        
-    return render_template('neighborhood_dashboard.html', neighborhood=str(neighborhoods[neighborhood]))
+    
+    return render_template('neighborhood_dashboard.html', neighborhood=convert_neighborhood_slug(neighborhood))
 
 @app.route("/neighborhoods/")
 def neighborhoods_list():
@@ -388,24 +427,18 @@ def request_display_by_date(type=None, start_day=None, end_day=None):
 ###
 # Statistics
 ###
-        
-@app.route("/avg_resp_time")
-def avg_resp_time():
-    neighborhood = request.args.get('neighborhood', None)
+
+# Average Response Time
+
+def calculate_avg_resp_time(neighborhood=None):
+    """
+        Calculate average response time for a neighborhood or the entire city over
+        the past 30 days.
+    """
     
-    res = query_db("""
-        SELECT MAX(requested_datetime) AS max_date
-        FROM sf_requests
-    """)
-    
-    end_date = res[0]['max_date']
+    end_date = get_max_date()
 
     start_date = end_date - timedelta(days=int(30))
-    
-    fmt = '%Y-%m-%d'
-    
-    start_day = start_date.strftime(fmt);
-    end_day = end_date.strftime(fmt)
     
     if neighborhood:
         res = query_db("""
@@ -417,9 +450,11 @@ def avg_resp_time():
             WHERE p.neighborho=(%s) AND r.status='Closed' AND r.requested_datetime BETWEEN (%s) and (%s)
         """, (neighborhood,start_date,end_date))
         
-        print 'res', res
-                
-        return json.dumps(res)
+        avg_resp_time = json.dumps(res)
+        
+        if USE_MEMCACHE:
+            # Assumes neighborhood names just have a single spaces (%20) between words
+            cache.set(neighborhood.replace(" ","-") + '-art', avg_resp_time, timeout=CACHE_TIMEOUT)
     else:
         res = query_db("""
             SELECT
@@ -428,8 +463,36 @@ def avg_resp_time():
             WHERE status='Closed' AND requested_datetime between (%s) and (%s)
         """, (start_date,end_date))
         
-        return json.dumps(res)
-
+        avg_resp_time = json.dumps(res)
+        
+        if USE_MEMCACHE:
+            cache.set('sanfrancisco-art', avg_resp_time, timeout=CACHE_TIMEOUT)
+    
+    return avg_resp_time
+    
+@app.route("/avg_resp_time")
+def get_avg_resp_time():
+    avg_resp_time = None
+    neighborhood = request.args.get('neighborhood', None)
+    
+    if neighborhood:
+        if USE_MEMCACHE:
+            avg_resp_time = cache.get(neighborhood.replace(" ","-") + '-art')
+        
+        if avg_resp_time is None:
+            print 'Not cached'
+            avg_resp_time = calculate_avg_resp_time(neighborhood)
+            
+    else:
+        if USE_MEMCACHE:
+            avg_resp_time = cache.get('sanfrancisco-art')
+        
+        if avg_resp_time is None:
+            print 'Not cached'
+            avg_resp_time = calculate_avg_resp_time()
+    
+    return avg_resp_time
+    
 ### CSV FOR THE DASHBOARD PAGE ###
 import csv
 from cStringIO import StringIO
@@ -522,22 +585,51 @@ def get_latest_neighborhood_csv(neighborhood=None):
 
 @app.route("/requests/neighborhoods/reqs.<format>", methods=['GET'])
 def get_requests_by_neighborhood_date_csv(format=None,neighborhood=None,start_day=None, end_day=None):
+    # Needs to account for updated datetime
+    
     if start_day is None:
         start_day = request.args.get('start_day', None)
         end_day = request.args.get('end_day', None)
         neighborhood = request.args.get('neighborhood', None)
         time_delta = request.args.get('time_delta', None)
         
-    neighborhoods = {'bayview':'Bayview', 'bernal':'Bernal Heights', 'castro':'Castro/Upper Market', 'chinatown':'Chinatown', 
-    'crocker_amazon':'Crocker Amazon', 'diamond_heights':'Diamond Heights', 'downtown':'Downtown/Civic Center', 'excelsior':'Excelsior', 
-    'financial_district':'Financial District', 'glen_park':'Glen Park', 'gg_park':'Golden Gate Park', 'haight_ashbury':'Haight Ashbury',
-    'inner_richmond': 'Inner Richmond', 'inner_sunset':'Inner Sunset', 'lakeshore':'Lakeshore', 'marina':'Marina', 'mission':'Mission',
-    'nob_hill':'Nob Hill', 'noe_valley':'Noe Valley', 'north_beach':'North Beach', 'ocean_view':'Ocean View',
-    'outer_mission':'Outer Mission', 'outer_richmond':'Outer Richmond', 'outer_sunset':'Outer Sunset', 'pacific_heights':'Pacific Heights',
-    'parkside':'Parkside', 'potrero_hill':'Potrero Hill', 'presidio':'Presidio', 'presidio_heights':'Presidio Heights',
-    'russian_hill':'Russian Hill', 'seacliff':'Seacliff', 'soma':'South of Market', 
-    'ti':'Treasure Island/YBI', 'twin_peaks':'Twin Peaks', 'visitacion':'Visitacion Valley', 'west_twin_peaks':'West of Twin Peaks', 
-    'western_addition':'Western Addition'}
+    neighborhoods = {'bayview':'Bayview',
+                     'bernal':'Bernal Heights', 
+                     'castro':'Castro/Upper Market',
+                     'chinatown':'Chinatown',
+                     'crocker_amazon':'Crocker Amazon', 
+                     'diamond_heights':'Diamond Heights', 
+                     'downtown':'Downtown/Civic Center', 
+                     'excelsior':'Excelsior', 
+                     'financial_district':'Financial District', 
+                     'glen_park':'Glen Park', 
+                     'gg_park':'Golden Gate Park', 
+                     'haight_ashbury':'Haight Ashbury',
+                     'inner_richmond': 'Inner Richmond', 
+                     'inner_sunset':'Inner Sunset', 
+                     'lakeshore':'Lakeshore', 
+                     'marina':'Marina', 
+                     'mission':'Mission',
+                     'nob_hill':'Nob Hill', 
+                     'noe_valley':'Noe Valley', 
+                     'north_beach':'North Beach', 
+                     'ocean_view':'Ocean View',
+                     'outer_mission':'Outer Mission', 
+                     'outer_richmond':'Outer Richmond', 
+                     'outer_sunset':'Outer Sunset', 
+                     'pacific_heights':'Pacific Heights',
+                     'parkside':'Parkside', 
+                     'potrero_hill':'Potrero Hill', 
+                     'presidio':'Presidio', 
+                     'presidio_heights':'Presidio Heights',
+                     'russian_hill':'Russian Hill', 
+                     'seacliff':'Seacliff', 
+                     'soma':'South of Market', 
+                     'ti':'Treasure Island/YBI', 
+                     'twin_peaks':'Twin Peaks',
+                     'visitacion':'Visitacion Valley', 
+                     'west_twin_peaks':'West of Twin Peaks', 
+                     'western_addition':'Western Addition'}
     
     if format in ('csv','tsv'):
         if start_day:
