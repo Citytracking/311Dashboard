@@ -17,7 +17,7 @@ create table sf_requests (
 ALTER TABLE sf_requests ADD COLUMN neighborhood text DEFAULT NULL;
 ALTER TABLE sf_requests ADD COLUMN category text DEFAULT NULL;
 
-CREATE INDEX requested_day ON sf_requests ( DATE(requested_datetime) );
-CREATE INDEX updated_day ON sf_requests ( DATE(updated_datetime) );
-CREATE INDEX neighborhood ON sf_requests ( neighborhood );
-CREATE INDEX request_status ON sf_requests ( status );
+CREATE INDEX requested_day_idx ON sf_requests ( DATE(requested_datetime) );
+CREATE INDEX updated_day_idx ON sf_requests ( DATE(updated_datetime) );
+CREATE INDEX neighborhood_idx ON sf_requests ( neighborhood );
+CREATE INDEX request_status_idx ON sf_requests ( status );
