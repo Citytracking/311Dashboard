@@ -446,7 +446,7 @@ def calculate_avg_resp_time(neighborhood=None):
                 AVG((EXTRACT(Epoch from r.updated_datetime - r.requested_datetime)/3600)::Integer) AS "avg_response_time"
             FROM sf_requests as r
             JOIN pn_geoms as p
-            JOIN pn_geoms as p ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
+            ON ST_INTERSECTS(geom, ST_MakePoint(r.lon,r.lat))
             WHERE p.neighborho=(%s) AND r.status='Closed' AND r.requested_datetime BETWEEN (%s) and (%s)
         """, (neighborhood,start_date,end_date))
         
