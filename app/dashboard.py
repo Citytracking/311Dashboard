@@ -12,11 +12,10 @@ ONE_DAY = timedelta(days=1)
 app = Flask(__name__)
 
 def load_config(filename):
-    fp = open(filename, 'r')
-    config = json.load(fp)
-    fp.close()
-    
-    return config
+    with open(filename, 'rt') as fp:
+        fp = open(filename, 'r')
+        config = json.load(fp)
+        return config
 
 def connect_db():
     return psycopg2.connect("host=localhost password=77 dbname=sf_311 user=sf_311")
