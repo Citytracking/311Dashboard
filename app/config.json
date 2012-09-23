@@ -1,6 +1,6 @@
 {
     "TITLE": "311 Dashboard",
-    "USE_MEMCACHE": true,
+    "USE_MEMCACHE": false,
     "CACHE_TIMEOUT": 300,
     "SERVER_NAME": null,
     "APPLICATION_ROOT": null,
