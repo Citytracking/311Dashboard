@@ -50,7 +50,7 @@ Get the neighborhood data
 
     http://apps.sfgov.org/datafiles/view.php?file=sfgis/planning_neighborhoods.zip
     
-2. Unzip planning_neighborhoods.zip
+2. Unzip planning_neighborhoods.zip.
 
 Convert the shapefile to web mercator
 -------------------------------------
@@ -61,7 +61,10 @@ Import the Shapefile into a PostGIS-enabled database
 ----------------------------------------------------
 1. `shp2pgsql -dID -s 900913 -W latin1 planning_neighborhoods_900913.shp pn_geoms | psql -U sf_311`
 
-Let's create a table for all of our 311 request data and populate the table.
+Note: The neighborhoods should already be indexed. This is how you would index the geometries:
+`CREATE INDEX pn_geoms_gist ON pn_geoms USING GIST (geom);`
+
+Now we're ready to create a table for all of our 311 request data and populate the table.
 
 Create requests table
 ---------------------
