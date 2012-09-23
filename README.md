@@ -80,7 +80,7 @@ If today's date is August 1st, 2013, run `python update_postgres_sf.py -e 2013-0
 
 Run the application
 -------------------
-1. You can find the core of the application, dashboard.py, in the flask directory.
-Once you're in the flask directory, simply type `sudo python dashboard.py --port 80`
+1. You can find the core of the application, dashboard.py, in the app directory.
+Once you're in the app directory, simply type `sudo python dashboard.py --port 80`
 
     If you want to run the application on port 5000, you can type `python dashboard.py --port 5000`
