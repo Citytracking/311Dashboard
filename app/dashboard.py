@@ -10,16 +10,13 @@ from datetime import date, datetime, timedelta
 ONE_DAY = timedelta(days=1)
 
 app = Flask(__name__)
-app.config.from_object(__name__)
 
-# Set up Memcache
-USE_MEMCACHE = True
-
-if USE_MEMCACHE:
-    from werkzeug.contrib.cache import MemcachedCache
-    cache = MemcachedCache(['127.0.0.1:11211'])
+def load_config(filename):
+    fp = open(filename, 'r')
+    config = json.load(fp)
+    fp.close()
     
-    CACHE_TIMEOUT = 300
+    return config
 
 def connect_db():
     return psycopg2.connect("host=localhost password=77 dbname=sf_311 user=sf_311")
@@ -32,6 +29,7 @@ def before_request():
 def teardown_request(exception):
     if hasattr(g, 'db'):
         g.db.close()
+    
 ###
 # Utility functions
 ###
@@ -881,6 +879,23 @@ if __name__ == "__main__":
     parser = optparse.OptionParser()
     parser.add_option('--port', dest='port', type='int', default=80)
     parser.add_option('--host', dest='host', default="0.0.0.0")
+    parser.add_option('--debug', dest='debug', action='store_true')
+    parser.add_option('-c', '--config', dest='config', default='config.json')
     options, args = parser.parse_args()
+    
+    config = load_config(options.config)
+    app.config.update(config)
+    
+    if options.debug:
+        app.debug = True
+    
+    # Set up Memcache
+    USE_MEMCACHE = app.config.get('USE_MEMCACHE')
+
+    if USE_MEMCACHE:
+        from werkzeug.contrib.cache import MemcachedCache
+        cache = MemcachedCache(['127.0.0.1:11211'])
+        
+        CACHE_TIMEOUT = app.config.get('CACHE_TIMEOUT')
     
     app.run(host=options.host, port=options.port)
