@@ -173,7 +173,7 @@ def update_database(reqs):
                 
                 print 'Getting the neighborhood'
                 
-                cur.execute("""SELECT neighborho from pn_geoms WHERE ST_INTERSECTS(geom, ST_MakePoint((%s),(%s)))""", (req['lon'], req['lat']))
+                cur.execute("""SELECT neighborho from pn_geoms WHERE ST_INTERSECTS(geom, SET_SRID(ST_MakePoint((%s),(%s)), 4326))""", (req['lon'], req['lat']))
                 
                 neighborhood = cur.fetchone()
                 
